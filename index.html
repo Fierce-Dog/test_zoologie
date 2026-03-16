@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoologie Obratlovců - Interaktivní Test</title>
+    <style>
+        :root { 
+            --primary: #1a5f7a;    
+            --accent: #57c5b6;     
+            --success: #2ecc71;    
+            --danger: #e74c3c;     
+            --text: #2c3e50;
+            --bg-gradient: linear-gradient(135deg, #1a5f7a 0%, #002b5b 100%);
+        }
+
+        body { 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background: var(--bg-gradient); 
+            margin: 0;
+            display: flex; 
+            justify-content: center; 
+            align-items: flex-start; /* Přilepení k horní hraně */
+            min-height: 100vh;
+        }
+
+        .container { 
+            max-width: 600px; 
+            width: 100%; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 0 0 24px 24px; /* Zaoblení jen dole */
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3); 
+            box-sizing: border-box;
+        }
+
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 20px; 
+        }
+
+        .q-info { font-weight: 800; color: var(--primary); }
+        
+        .group-tag { 
+            background: var(--primary); 
+            color: white;
+            padding: 5px 12px; 
+            border-radius: 100px; 
+            font-size: 0.75em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .question-text { 
+            font-size: 1.4em; 
+            font-weight: 700;
+            margin-bottom: 25px; 
+            line-height: 1.3; 
+            color: var(--text); 
+        }
+
+        /* Hlavní kontejner pro blok odpovědí */
+        .options-wrapper { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            padding: 20px;
+            background: #f1f5f9; 
+            border: 3px solid #cbd5e1; 
+            border-radius: 20px;
+        }
+
+        .opt { 
+            padding: 18px 20px; 
+            /* Výrazný rámeček pro každou možnost */
+            border: 2px solid #7397c3; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+            background: white; 
+            text-align: left; 
+            font-size: 1.05em;
+            font-weight: 600;
+            color: var(--text);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            width: 100%;
+        }
+
+        .opt:hover:not(:disabled) { 
+            border-color: var(--primary); 
+            transform: translateX(8px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+
+        .opt.correct { 
+            background: var(--success) !important; 
+            color: white; 
+            border-color: #1e8449;
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4);
+        }
+
+        .opt.wrong { 
+            background: var(--danger) !important; 
+            color: white; 
+            border-color: #a93226;
+        }
+
+        #next-btn { 
+            margin-top: 25px; 
+            width: 100%; 
+            padding: 18px; 
+            border: none; 
+            border-radius: 14px; 
+            background: var(--primary); 
+            color: white; 
+            font-size: 1.1em; 
+            font-weight: 700;
+            cursor: pointer; 
+            display: none; 
+            box-shadow: 0 8px 15px rgba(26, 95, 122, 0.2);
+        }
+
+        /* Mobilní optimalizace */
+        @media (max-width: 600px) {
+            .container { padding: 20px; border-radius: 0; }
+            .question-text { font-size: 1.2em; }
+            .options-wrapper { padding: 12px; gap: 10px; }
+            .opt { padding: 14px 16px; font-size: 1em; border-width: 2px; }
+        }
+
+        .back-link {
+            display: inline-block;
+            text-decoration: none;
+            color: #7f8c8d; /* Decentní šedá */
+            font-size: 0.7em;
+            font-weight: 600;
+            padding: 5px 10px;
+            border: 1px solid #d1d9e0;
+            border-radius: 8px;
+            transition: all 0.2s;
+            margin-bottom: 10px; /* Mezera pod tlačítkem */
+        }
+
+        .back-link:hover {
+            background: #f1f5f9;
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="quiz-box">
+    <a href="https://fierce-dog.github.io/poznavacky_linktree/" class="back-link">⬅ Zpět na rozcestí</a>
+    <div class="header">
+        <span class="q-info" id="q-counter">Otázka 0/0</span>
+        <span class="group-tag" id="group-name">NAČÍTÁNÍ</span>
+    </div>
+    <div class="question-text" id="q-text">Připravuji test...</div>
+    <div class="options-wrapper" id="q-options"></div>
+    <button id="next-btn" onclick="handleNext()">Další otázka →</button>
+</div>
+
+<script>
+// Zde budeš vkládat své balíky otázek
+const rawData = [
+    { g: 'A', q: 'Základní kategorií živých soustav je:', o: ['jedinec', 'populace', 'druh', 'rod'], a: 0 },
+    { g: 'A', q: 'Eukaryotická buňka:', o: ['útvar, z něhož se skládá jen tělo vyšších obratlovců', 'nejjednodušší a nejmenší útvar schopný všech životních projevů', 'útvar, z něhož se skládá tělo živočichů obývajících Evropu', 'útvar, který neobsahuje vlastní dvouřetězcovou DNA'], a: 1 },
+    { g: 'A', q: 'Za místo, kde pravděpodobně vznikl život, jsou považovány:', o: ['gejzíry turbulentně vyvrhující vodu a páru (šeré chrliče)', 'hlubinné hydrotermální průduchy (černé kuřáky)', 'hlubinné praskliny (podmořské zlomy)', 'hluboké krasové jeskyně zatopené vodou (vodní kaverny)'], a: 1 },
+    { g: 'A', q: 'Systematika organizmů:', o: ['zkoumá diverzitu organizmů kromě vymřelých', 'zkoumá diverzitu bez ohledu na příbuznost', 'zabývá se zkoumáním tělesných soustav', 'zkoumá diverzitu (včetně vymřelých) a jejich vzájemnou příbuznost'], a: 3 },
+    { g: 'A', q: 'Zakrnělé orgány obvykle již organizmem nepoužívané, které byly efektivní u nižšího stupně se označují jako:', o: ['atavizmy', 'anatomizmy', 'rudimenty', 'homologizmy'], a: 2 },
+    { g: 'A', q: 'Fylogenetická taxonomie je:', o: ['kladistika', 'fenetika', 'rudimenty', 'biologistika'], a: 0 },
+    { g: 'A', q: 'Zoologická nomenklatura pracuje s principem:', o: ['synonymie', 'heteronymie', 'homonymie', 'autonomie'], a: 2 },
+    { g: 'A', q: 'Jedinec, podle nějž je popsán druh, se označuje jako:', o: ['holotyp', 'allotyp', 'paratyp', 'neotyp'], a: 2 },
+    { g: 'A', q: 'Popsal asi 500 druhů, vytvořil základy srovnávací anatomie a embryologie. Jmenoval se:', o: ['Konrad Gessner', 'Aristotelés ze Stageiry', 'Pierre Belon', 'Ulisse Aldrovandi'], a: 1 },
+    { g: 'A', q: 'Otec moderní taxonomie. Zakladatel podvojné nomenklatury. Zavedl pojem „druh“:', o: ['Carl Linné', 'Aristotelés ze Stageiry', 'Pierre Belon', 'Ulisse Aldrovandi'], a: 0 },
+    { g: 'A', q: 'Autor první ucelené evoluční teorie. Zavedl pojem „bezobratlí“:', o: ['Carl Linné', 'Jean-Baptiste Lamarck', 'Pierre Belon', 'Ulisse Aldrovandi'], a: 1 },
+    { g: 'A', q: 'Zakladatel evoluční biologie. Evoluční teorii opíral o přírodní a pohlavní výběr:', o: ['Alexander von Humboldt', 'Jan Evangelista Purkyně', 'Georges Cuvier', 'Charles Darwin'], a: 3 },
+    { g: 'A', q: 'Pro polostrunatce je charakteristické, že mají:', o: ['tělo členěno na hlavu, límec, trup', 'tělo členěno na hlavohruď, límec, zadeček', 'tělo členěno na hlavu, opasek, přívěsek', 'tělo členěno na hlavotrup, límeček, zadeček'], a: 0 },
+    // Skupina B - Strunatci (Chordata)
+    { g: 'B', q: 'Charakteristika strunatců (Chordata):', o: ['dvoustranně souměrní, v hřbetní části mají chordu dorsalis, vakovité srdce na břišní straně', 'radiálně souměrní, chorda dorsalis v hřbetní části, srdce na břišní straně', 'dvoustranně souměrní, chorda na břišní straně, srdce na hřbetní straně', 'nesouměrní, chorda na břišní straně, vakovité srdce na hřbetní straně'], a: 0 },
+    { g: 'B', q: 'Podkmeny strunatců (Chordata):', o: ['pláštěnci, bezlebeční a obratlovci', 'bezpáteřní, bezlebeční a obratlovci', 'pláštěnci, bezpáteřní a obratlovci', 'pláštěnkovci, bezpáteřní a bezobratlovci'], a: 0 },
+    { g: 'B', q: 'Charakteristika pláštěnců (Tunicata):', o: ['sladkovodní strunatci, chorda a nervová trubice pouze u larev, tělo dospělce v plášti', 'mořští strunatci, chorda a nervová trubice pouze u larev, tělo dospělce v rosolovitém plášti', 'mořští strunatci, chorda a nervová trubice pouze u dospělců', 'sladkovodní strunatci, chorda pouze u dospělců, larva v plášti'], a: 1 },
+    { g: 'B', q: 'Charakteristika bezlebečných (Cephalochordata):', o: ['terestričtí strunatci, chorda pouze u larvy, mají skutečný mozek', 'sladkovodní strunatci, chorda po celý život, mají skutečný mozek', 'mořští strunatci, chorda zachována po celý život, chybí skutečný mozek', 'sladkovodní strunatci, chorda pouze v období larvy, bez mozku'], a: 2 },
+    { g: 'B', q: 'Charakteristika obratlovců (Chordata):', o: ['chrupavčitá či kostěná kostra, neodlišitelná hlava', 'obligatorně kostěná kostra, odlišitelná hlava', 'obligatorně chrupavčitá kostra, odlišitelná hlava', 'chrupavčitá či kostěná kostra, odlišitelná hlava'], a: 3 },
+    { g: 'B', q: 'Třídy pláštěnců (Tunicata):', o: ['sumky, salpy a vršenky', 'sumci, katalpy a vrše', 'sumci, salpy a vršenky', 'sumýši, sumky a vršovci'], a: 0 },
+    { g: 'B', q: 'Pro třídu bezlebečných (Cephalochordata) je typické, že:', o: ['nervová trubice začíná až v břišní části', 'nervová trubice začíná, na rozdíl od ostatních, již v hlavové části', 'nemají vyvinutou nervovou trubici', 'nervová trubice začíná i končí v hlavové části'], a: 1 },
+    { g: 'B', q: 'Způsob života pláštěnců (Tunicata):', o: ['pouze nepohlavní rozmnožování, kůže vylučuje jed', 'pouze nepohlavní rozmnožování, plášť z tunicinu', 'pohlavní i nepohlavní rozmnožování, pokožka vylučuje plášť z tunicinu', 'pouze pohlavní rozmnožování, kůže vylučuje jed'], a: 2 },
+    { g: 'B', q: 'Způsob života bezlebečných (Cephalochordata):', o: ['mělká moře, k filtrování potravy slouží trubicovitá chorda', 'hluboká moře, k filtrování potravy slouží proděravělý hltan', 'hluboká moře, k filtrování potravy slouží trubicovitá chorda', 'mělká moře – příbřežní část, k filtrování potravy slouží proděravělý hltan'], a: 3 },
+    { g: 'B', q: 'Chorda dorsalis u pláštěnců (Tunicata):', o: ['existuje pouze u larev', 'existuje pouze u dospělců', 'u dospělců osifikuje v první polovině', 'u dospělců osifikuje v druhé polovině'], a: 0 },
+    { g: 'B', q: 'Chorda dorsalis u bezlebečných (Cephalochordata):', o: ['existuje pouze u larev', 'existuje pouze u dospělců', 'existuje u larev i dospělců', 'není vůbec vyvinuta'], a: 2 },
+    { g: 'B', q: 'Chorda dorsalis u obratlovců (Vertebrata) existuje:', o: ['pouze v embryonálním vývoji, poté nahrazena kostěnou kostrou', 'pouze v embryonálním vývoji, poté nahrazena chrupavčitou kostrou', 'pouze u dospělců', 'pouze v embryonálním vývoji, následně nahrazena kostěnou nebo chrupavčitou kostrou'], a: 3 },
+    { g: 'B', q: 'Chorda dorsalis je u dospělého člověka:', o: ['uprostřed páteřního kanálu', 'v osifikované části krční páteře', 'nenachází se (přítomna pouze během embryonálního vývoje)', 'v kostrči'], a: 2 },
+    { g: 'B', q: 'Označení nástupce chordy dorsalis u vyšších obratlovců je:', o: ['kostra', 'kostrč', 'podvěsek mozkový', 'processus xiphoideus (mečovitý výběžek)'], a: 0 },
+    // Skupina C - Bezčelistnatci a paryby
+    { g: 'C', q: 'Charakteristické pro bezčelistnatce (Agnatha) je:', o: ['hadovité tělo, nepřítomnost čelistí, chybí párové ploutve', 'kaprovité tělo, chybí mandibula, mají párové ploutve', 'lososovité tělo, chybí maxila, bez párových ploutví', 'sumcovité tělo, bez čelistí, mají párové ploutve'], a: 0 },
+    { g: 'C', q: 'Bezčelistnatci (Agnatha) se od čelistnatců (Gnathostoma) odlišují:', o: ['bezčelistnatci mají párové ploutve', 'bezčelistnatci nemají čelisti, čelistnatci mají plně vyvinutou čelist', 'bezčelistnatci mají pouze chelicery', 'bezčelistnatci mají bodavě-sací ústrojí'], a: 1 },
+    { g: 'C', q: 'Charakteristické pro sliznatky (Myxini) je:', o: ['absence čelistí, plně osifikované obratle, mají šupiny', 'horní postavení úst, struna naznačená, mají šupiny', 'absence čelistí, velmi zachovalá struna hřbetní, nemají šupiny', 'horní postavení úst, vždy s obratli, nemají šupiny'], a: 2 },
+    { g: 'C', q: 'Charakteristické pro mihule (Cephalaspidomorphi) je:', o: ['přísavný terč, larva minoha, 4 páry žaberních otvorů', 'odstředivý terč, larva zoea, 8 párů žaberních otvorů', 'odstředivý terč, larva zoea, 5 párů žaberních otvorů', 'přísavný terč, slepá larva minoha, 7 párů žaberních otvorů'], a: 3 },
+    { g: 'C', q: 'Sliznatky (Myxini) dýchají pomocí:', o: ['nasohypofyzárního vaku', 'vomeronasální vychlípeniny', 'postanálního sifonu', 'vnějších keříčkových žaber'], a: 0 },
+    { g: 'C', q: 'Parazitickým a migratorním zástupcem mihulí je:', o: ['mihule potoční', 'mihule říční (Lampetra fluviatilis)', 'mihule kapří', 'mihule obecná'], a: 1 },
+    { g: 'C', q: 'Charakteristické pro paryby (Chondrichthyes) je:', o: ['primárně mořské, kostra chrupavčitá, chorda není zachována', 'sladkovodní, kostra kostěná, chorda zachována', 'primárně mořské, kostra chrupavčitá, chorda zachována, oplození vnitřní', 'primárně sladkovodní, oplození vnitřní'], a: 2 },
+    { g: 'C', q: 'Tvar těla paryb (Chondrichthyes) je:', o: ['laterálně ploché, ústa nahoře', 'torpédovitý nebo zploštělý, ústa na horní straně', 'torpédovitý nebo hadovitý, ústa na spodní straně', 'torpédovitý nebo zploštělý, ústa na spodní straně'], a: 3 },
+    { g: 'C', q: 'Kůže paryb (Chondrichthyes) je:', o: ['tvořena kůží a škárou, většinou plakoidní šupiny', 'tvořena kůží a škárou, většinou kosmoidní šupiny', 'vždy zcela bez šupin', 'bez škáry a bez šupin'], a: 0 },
+    { g: 'C', q: 'Končetiny paryb (Chondrichthyes) tvoří:', o: ['ploutve s kostěnou kostrou', 'ploutve s chrupavčitou kostrou, párové (prsní, břišní) a nepárové', 'párové ploutve ocasní, prsní a břišní', 'pouze nepárové ploutve'], a: 1 },
+    { g: 'C', q: 'Pro kostru paryb (Chondrichthyes) platí:', o: ['je chrupavčitá, silná osifikace', 'je chrupavčitá, chorda zcela chybí', 'je chrupavčitá, chorda zachována, prostoupena neúplnými těly obratlů', 'je kostěná, chorda zachována'], a: 2 },
+    { g: 'C', q: 'Srdce paryb (Chondrichthyes) má:', o: ['žilný splav, dvě předsíně, komoru a tepenný násadec', 'dvě komory a dvě předsíně', 'dvě komory a tři předsíně', 'žilný splav, předsíň, komoru a tepenný násadec'], a: 3 },
+    { g: 'C', q: 'Dýchací orgány paryb (Chondrichthyes) tvoří:', o: ['žábry bez přídatných orgánů a bez plynového měchýře', 'žábry a přídatné orgány bez plynového měchýře', 'žábry a plynový měchýř', 'plíce s plynovým měchýřem'], a: 0 },
+    { g: 'C', q: 'Smysly paryb (Chondrichthyes) jsou:', o: ['čich, proudový orgán, rovnovážně-sluchový orgán a zrak', 'chuť, proudový orgán, rovnovážně-sluchový orgán a zrak', 'chuť, čich, proudový orgán, rovnovážně-sluchový orgán a zrak', 'chuť, čich, sluchový orgán a zrak'], a: 2 },
+    { g: 'C', q: 'Rozmnožování paryb (Chondrichthyes) charakterizuje:', o: ['vnější oplození, pterygopody ze žaludku', 'vnitřní oplození, pterygopody ze střev', 'vnější oplození, pterygopody z kůže', 'vnitřní oplození, pterygopody z ploutví, oviparie až viviparie'], a: 3 },
+    { g: 'C', q: 'Zástupci paryb (Chondrichthyes) jsou:', o: ['kladivoun, trnucha, chiméra, manta', 'arapaima, žralok, manta, chiméra', 'rejnok, žralok, manta, kosatka', 'žralok, manta, máčka, omáčka'], a: 0 },
+    // Skupina D - 1. část (otázky 268-351 v dokumentu)
+    { g: 'D', q: 'Násadcoploutví (Sarcopterygii) mají:', o: ['ploutve se svalnatými násadci, vnější nozdry (spirochety), plicní vaky', 'ploutve se svalnatými násadci, vnitřní nozdry (choany), plicní vaky', 'ploutve bez násadců, vnější nozdry (spirochety), žaberní saky', 'ploutve bez násadců, vnitřní nozdry (choany), žaberní saky'], a: 1 },
+    { g: 'D', q: 'Do podtřídy násadcoploutví (Sarcopterygii) patří:', o: ['lalokoploutví, dvojdyšní, čtvernožci', 'lalokonozí, dvojdyšní, čtvernožci', 'vakoploutví, dvojdyšní, trojdyšní', 'lelkoploutví, dvojdyšní, ptakoještěři'], a: 0 },
+    { g: 'D', q: 'Charakteristické pro lalokoploutvé (Coelacanthimorpha) je:', o: ['lebka je podobná lebce obojživelníků, nepárové ploutve s mohutnou svalovinou, vnější oplození', 'lebka je podobná lebce obojživelníků, párové ploutve s mohutnou svalovinou, vnitřní oplození', 'lebka je podobná lebce želv, párové ploutve s mohutnou svalovinou, vnitřní oplození', 'lebka je podobná lebce jeseterů, nepárové ploutve s mohutnou svalovinou, vnější oplození'], a: 1 },
+    { g: 'D', q: 'Charakteristické pro dvojdyšné (Dipnoi) je:', o: ['jeden nebo dva plicní vaky, žábry jsou plně vyvinuté', 'čtyři plicní vaky, žábry jsou zakrnělé', 'jeden nebo dva plicní vaky, žábry jsou zakrnělé', 'vždy jen jeden plicní vak, žábry jsou plně vyvinuté'], a: 2 },
+    { g: 'D', q: 'Charakteristické pro čtvernožce (Tetrapoda) je:', o: ['primárně suchozemští, potomci ancestrálních svaloploutvých ryb, plná osifikace kostry', 'primárně vodní, potomci ancestrálních vakoploutvých ryb, částečná osifikace kostry', 'primárně suchozemští, potomci recentních ocasatých ryb, kostra částečně chrupavčitá', 'primárně vodní, potomci recentních čtyřploutvých ryb, kostra plně chrupavčitá'], a: 0 },
+    { g: 'D', q: 'Zástupcem lalokoploutvých (Coelacanthiformes) je:', o: ['latimérie', 'sekavec', 'bahník', 'měsíčník'], a: 0 },
+    { g: 'D', q: 'Zástupcem dvojdyšných (Dipnoi) je:', o: ['latimérie', 'sekavec', 'bahník', 'měsíčník'], a: 2 },
+    { g: 'D', q: 'Zástupcem čtvernožců (Tetrapoda) jsou:', o: ['obojživelníci', 'bahníci', 'lezci', 'bichirové'], a: 0 },
+    { g: 'D', q: 'Evoluční proces vzniku čtvernožců:', o: ['lalokoploutvé ryby, končetiny suchozemského typu, pánevní pletenec, krk, plíce, ústup ploutví a žaber', 'paprskoploutvé ryby, složené ploutve, pánevní pletenec, plíce, ústup ploutví a žaber', 'lalokoploutvé ryby, končetiny suchozemského typu, zánik pánevního pletence, krk, ústup ploutví a plně vyvinuté žábry', 'paprskoploutvé ryby, končetiny suchozemského typu, dvojitý pánevní pletenec, krk, plíce, ústup ploutví a žaber'], a: 0 },
+    { g: 'D', q: 'Charakteristika paprskoploutvých ryb (Actinopterygii):', o: ['ploutve vyztuženy chrupavčitými paprsky', 'ploutve vyztuženy kostěnými paprsky', 'ploutve vyztuženy chitinovými paprsky', 'ploutve vyztuženy chondroitinovými paprsky'], a: 1 },
+    { g: 'D', q: 'Kostra ploutve paprskoploutvých ryb (Actinopterygii):', o: ['ploutevní paprsky s chondroitinovou oporou z radiálního skeletu', 'ploutevní paprsky s chitinovou oporou z axiálního skeletu', 'ploutevní paprsky s chrupavčitou oporou z radiálního skeletu', 'ploutevní paprsky s kostěnou oporou z axiálního skeletu'], a: 3 },
+    { g: 'D', q: 'Druhy ocasních ploutví paprskoploutvých ryb (Actinopterygii):', o: ['heterocerkní, isocerkní, homocerkní', 'homocerkní, difysilocerkní, polycerkní', 'heterocerkní, acerkní, oligontocerkní', 'heterocerkní, oligontocerkní, anisocerkní'], a: 0 },
+    { g: 'D', q: 'Druhy ploutví paprskoploutvých ryb (Actinopterygii):', o: ['párová prsní, nepárové břišní, řitní, ocasní, hřbetní a tuková ploutvička', 'párové prsní, hřbetní a břišní, nepárové řitní, ocasní a tuková ploutvička', 'párové prsní, břišní a tukové, nepárové řitní, ocasní a hřbetní', 'párové prsní a břišní, nepárové řitní, ocasní, hřbetní a tuková ploutvička'], a: 3 },
+    { g: 'D', q: 'Weberovo ústrojí paprskoploutvých ryb (Actinopterygii):', o: ['zajišťuje přenos zvuků do plynového měchýře, který funguje jako rezonátor', 'zajišťuje přenos zvuků do skřelí, které fungují jako rezonátor', 'zajišťuje přenos zvuků do močového měchýře, který funguje jako rezonátor', 'zajišťuje přenos zvuků do hlavových kostí, které fungují jako rezonátor (os resonantia)'], a: 0 },
+    // Skupina D - 2. část (otázky 352-483 v dokumentu)
+    { g: 'D', q: 'Požerákovou kost paprskoploutvých ryb (Actinopterygii) tvoří:', o: ['srpkovité kosti v hepatopankreatu, nesou požerákové zuby', 'srpkovité kosti v jícnu, nesou požerákové zuby', 'srpkovité kosti v žaludku, nesou požerákové zuby', 'srpkovité kosti ve střevech, nesou požerákové zuby'], a: 1 },
+    { g: 'D', q: 'Požerákové zuby paprskoploutvých ryb (Actinopterygii):', o: ['vznikly přeměnou druhého žaberního oblouku', 'vznikly přeměnou třetího žaberního oblouku', 'vznikly přeměnou čtvrtého žaberního oblouku', 'vznikly přeměnou pátého žaberního oblouku'], a: 3 },
+    { g: 'D', q: 'Žaberní komory paprskoploutvých ryb kryje:', o: ['pohyblivá vomeronasální destička', 'pohyblivá urogenitální papila', 'pohyblivá žaberní lamela', 'pohyblivé skřelové víčko'], a: 3 },
+    { g: 'D', q: 'Mozek paprskoploutvých ryb (Actinopterygii):', o: ['je dvoudílný, hlavním integračním centrem je prodloužená mícha', 'je třídílný, hlavním integračním centrem je mezimozek', 'je čtyřdílný, hlavním integračním centrem je mozeček', 'je pětidílný, hlavním integračním centrem je střední mozek'], a: 3 },
+    { g: 'D', q: 'Oko paprskoploutvých ryb (Actinopterygii):', o: ['má víčko, nemá slzné žlázy, akomoduje pomocí svalu, čočka je zploštělá a mění svůj tvar', 'nemá víčko, nemá slzné žlázy, akomoduje pomocí svalu, čočka je kulovitá a má stejný tvar', 'nemá víčko, má slzné žlázy, akomoduje pomocí svalu, čočka je zploštělá a má stejný tvar', 'má víčko, má slzné žlázy, akomoduje pomocí šlachy, čočka je kulovitá a mění svůj tvar'], a: 1 },
+    { g: 'D', q: 'Sluchové ústrojí paprskoploutvých ryb (Actinopterygii) tvoří:', o: ['statokinetické orgány, chrupavčitý labyrint', 'statoakustické orgány, kostěný labyrint', 'statoakustické orgány, blanitý labyrint', 'statokinetické orgány, chitinový labyrint'], a: 2 },
+    { g: 'D', q: 'Čich paprskoploutvých ryb (Actinopterygii) tvoří:', o: ['párový orgán za očima (v nosních jamkách)', 'nepárový orgán pod očima (v nosních jamkách)', 'nepárový orgán nad očima (v nosních jamkách)', 'párový orgán před očima (v nosních jamkách)'], a: 3 },
+    { g: 'D', q: 'Chuť paprskoploutvých ryb (Actinopterygii) zajišťují:', o: ['chuťové pupeny – na vousech, v ústech, v jícnu i na těle', 'chuťové lamely – na vousech, v ústech, v jícnu a v žaludku', 'chuťové pupeny – v ústech, v jícnu i na těle', 'chuťové lamely – na vousech, v ústech, v jícnu i na těle'], a: 0 },
+    { g: 'D', q: 'Postranní čára paprskoploutvých ryb (Actinopterygii):', o: ['nepárový smyslový orgán umístěný na hlavě, registrace proudění vody a vlnění', 'párový smyslový orgán umístěný na boku těla, registrace proudění vody a vlnění', 'nepárový smyslový orgán umístěný na boku těla, registrace proudění vody a vlnění', 'párový smyslový orgán umístěný na hlavě, registrace změny fotoperiody'], a: 1 },
+    { g: 'D', q: 'Krevní oběh paprskoploutvých ryb (Actinopterygii) zahrnuje:', o: ['srdce (žilný splav, dvě předsíně, dvě komory, dva tepenné nástavce), cévy, žíly a kapilární síť', 'srdce (žilný splav, jedna předsíň, dvě komory, jeden tepenný násadec), cévy, žíly a kapilární síť', 'srdce (žilný splav, dvě předsíně, jedna komora, jeden tepenný násadec), cévy, žíly a kapilární síť', 'srdce (žilný splav, jedna předsíň, jedna komora, jeden tepenný násadec), cévy, žíly a kapilární síť'], a: 3 },
+    { g: 'D', q: 'Dýchání paprskoploutvých ryb zajišťují žaberní lamely i řada adaptací. Vyber tu, kterou nemají ŽÁDNÉ paprskoploutvé ryby:', o: ['dýchání povrchem kůže', 'střevní dýchání', 'dýchání postranní čárou', 'dýchání labyrintním orgánem'], a: 2 },
+    { g: 'D', q: 'Krev v kapilárách paprskoploutvých ryb (Actinopterygii) teče:', o: ['po směru proudění vody', 'proti směru proudění vody', 'směrem k hladině', 'směrem ke dnu'], a: 1 },
+    { g: 'D', q: 'Vylučování paprskoploutvých ryb (Actinopterygii) zajišťují:', o: ['malphigické trubice', 'ledviny', 'tykadlové žlázy', 'plynový měchýř'], a: 1 },
+    { g: 'D', q: 'Rozmnožování paprskoploutvých ryb (Actinopterygii) probíhá:', o: ['u většiny druhů s vnějším oplozením a akt reprodukce se nazývá výtěr', 'u většiny druhů s vnitřním oplozením a akt reprodukce se nazývá páření', 'u většiny druhů s vnějším oplozením a akt reprodukce se nazývá záběr', 'u většiny druhů s vnitřním oplozením a akt reprodukce se nazývá otěr'], a: 0 },
+    { g: 'D', q: 'Etapy ontogenetického vývoje paprskoploutvých ryb (Actinopterygii):', o: ['embryonální, larvální, juvenilní, subadultní a adultní', 'embryonální, larvální, juvenilní a adultní', 'embryonální, juvenilní, adultní a senektivní', 'embryonální, larvální, juvenilní, adultní a senektivní'], a: 3 },
+    { g: 'D', q: 'Katadromní ryby kvůli reprodukci migrují:', o: ['z nížinných toků do pramenných oblastí', 'z moře do sladké vody', 'ze sladké vody do moře', 'z potoků do velkých řek'], a: 2 },
+    { g: 'D', q: 'Anadromní ryby kvůli reprodukci migrují:', o: ['z nížinných toků do pramenných oblastí', 'z moře do sladké vody', 'ze sladké vody do moře', 'z potoků do velkých řek'], a: 1 },
+    { g: 'D', q: 'Mezi nepůvodní ryby na území ČR řadíme:', o: ['štiku obecnou, jelce jesena, pstruha duhového, karase obecného', 'sumečka černého, bolena dravého, jesetera malého, perlína ostrobřichého', 'ouklej obecnou, cejnka malého, slunečnici pestrou, slunku obecnou', 'střevličku východní, sumečka černého, amura bílého, koljušku tříostnou'], a: 3 },
+    { g: 'D', q: 'Charakteristické pro chrupavčité (Chondrostei) je:', o: ['chrupavčitá kostra, lebka s rostrem, extrémně spodní ústa, heterocerkní ploutev, spirakulum', 'chrupavčitá kostra, lebka bez rostra, koncová ústa, homocerkní ploutev, spirakulum', 'chrupavčitá kostra, lebka s rostrem, extrémně horní ústa, difycerkní ploutev, mirakulum', 'chrupavčitá kostra, lebka bez rostra, spodní ústa, acerkní ploutev, spirakulum'], a: 0 },
+    { g: 'D', q: 'Kostra chrupavčitých (Chondrostei) je:', o: ['kostěná', 'polokostěná', 'chrupavčitá', 'polochrupavčitá'], a: 2 },
+    { g: 'D', q: 'Ocasní ploutev chrupavčitých (Chondrostei) je:', o: ['homocekrní', 'heterocerkní', 'difycerkní', 'difycerkní nebo homocerkní'], a: 1 },
+    { g: 'D', q: 'Šupiny chrupavčitých (Chondrostei) jsou:', o: ['ganoidní', 'kosmoidní', 'cykloidní', 'ktenoidní'], a: 0 },
+    // Skupina D - 3. část (otázky 484-597 v dokumentu)
+    { g: 'D', q: 'Charakteristické pro kostnaté (Neopterygii) je:', o: ['dobře osifikovaná kostra, bez plynového měchýře, bez spirakula, slepé vaky ve střevě, homocerkní ploutev', 'dobře osifikovaná kostra, bez plynového měchýře, bez spirakula, slepé vaky ve střevě, difycerkní ploutev', 'dobře osifikovaná kostra, plynový měchýř, bez spirakula, slepé vaky ve střevě, homocerkní ploutev', 'dobře osifikovaná kostra, plynový měchýř, spirakulum přítomno, slepé vaky ve střevě, heterocerkní ploutev'], a: 2 },
+    { g: 'D', q: 'Kostra kostnatých (Neopterygii) je:', o: ['kostěná', 'polokostěná', 'chrupavčitá', 'polochrupavčitá'], a: 0 },
+    { g: 'D', q: 'Sluch kostnatých (Neopterygii):', o: ['je dobrý u druhů, které nemají Weberův aparát', 'je dobrý u druhů, které mají Weberův aparát', 'je dobrý u všech druhů', 'je velice špatný u všech druhů'], a: 1 },
+    { g: 'D', q: 'Ocasní ploutev kostnatých (Neopterygii) je:', o: ['homocekrní', 'heterocerkní', 'difycerkní', 'difycerkní nebo homocerkní'], a: 0 },
+    { g: 'D', q: 'Šupiny kostnatých (Neopterygii) jsou:', o: ['ganoidní', 'kosmoidní', 'cykloidní a ktenoidní', 'ktenoidní a ganoidní'], a: 2 },
+    { g: 'D', q: 'Charakteristické pro holobřiché (Anguiliformes) je:', o: ['ploché tělo, párové ploutve tvoří ploutevní lem, šupiny rudimentární nebo chybí', 'hadovité tělo, párové ploutve tvoří ploutevní lem, šupiny dobře vyvinuté', 'hadovité tělo, nepárové ploutve tvoří ploutevní lem, šupiny rudimentární nebo zcela chybí', 'ploché tělo, nepárové ploutve tvoří ploutevní lem, šupiny dobře vyvinuté'], a: 2 },
+    { g: 'D', q: 'Zástupcem holobřichých (Anguiliformes) je:', o: ['úhoř říční', 'sumec velký', 'koljuška tříostná', 'mřenka mramorovaná'], a: 0 },
+    { g: 'D', q: 'Charakteristické pro sleďovité ryby (Clupeidae) je:', o: ['nápadně vykrojená ocasní ploutev, křídlové šupiny na břiše (pilovitý okraj), vyvinutý ductus pneumaticus', 'rovná ocasní ploutev, křídlové šupiny na břiše, ductus pneumaticus chybí', 'nápadně vykrojená ocasní ploutev, ostnité šupiny na hlavě, vyvinutý ductus pneumaticus', 'nápadně vykrojená ocasní ploutev, tělo bez šupin, ductus pneumaticus chybí'], a: 0 },
+    { g: 'D', q: 'Zástupci sleďovitých ryb (Clupeidae) jsou:', o: ['sardinky', 'jeseteři', 'sumci', 'piskoři'], a: 0 },
+    { g: 'D', q: 'Charakteristické pro máloostné (Cypriniformes) je:', o: ['ploutve trnité, ductus pneumaticus, cykloidní šupiny', 'ploutve bez trnů, ductus pneumaticus, ganoidní šupiny', 'ploutve trnité, ductus pneumaticus, cykloidní šupiny', 'ploutve bez trnů, ductus pneumaticus, cykloidní šupiny'], a: 3 },
+    { g: 'D', q: 'Mezi tropické zástupce sumcovitých (Siluriformes) řadíme:', o: ['keříčkovce, krunýřovce, anténovce', 'lososy, jesetery, hlubinovky', 'murény, sapíny, odrance', 'sliznatky, okounky, halančíky'], a: 0 },
+    { g: 'D', q: 'Mezi máloostné (Cypriniformes) s původním výskytem na území ČR řadíme:', o: ['karase obecného, jelce jesena', 'štiku obecnou, okouna říčního', 'ostroretku stěhovavou, úhoře říčního', 'cejna velkého, lososa obecného'], a: 0 },
+    { g: 'D', q: 'Oko plotice obecné (Rutilus rutilus) je:', o: ['modré', 'žluté', 'červené', 'zelené'], a: 2 },
+    { g: 'D', q: 'Zástupcem mřenkovitých (Nemacheilidae) je:', o: ['vranka obecná', 'bahník hnědý', 'piskoř pruhovaný', 'mřenka mramorovaná'], a: 3 },
+    { g: 'D', q: 'Zástupcem sekavcovitých (Cobitidae) je:', o: ['bahník hnědý', 'sekavec podunajský', 'sekernatka černopruhá', 'mřenka mramorovaná'], a: 1 },
+    { g: 'D', q: 'Mezi štikotvárné (Esociformes) patří:', o: ['štika obecná, pstruh obecný', 'štika obecná, bolen dravý', 'štika obecná, perlín ostrobřichý', 'štika obecná, blatňák tmavý'], a: 2 },
+    { g: 'D', q: 'Treska patří mezi:', o: ['hrdloploutvé (Gadiformes)', 'okounovité (Percidae)', 'lososotvárné (Salmoniformes)', 'máloostné (Cypriniformes)'], a: 0 },
+    { g: 'D', q: 'Největší lososotvárná (Salmoniformes) ryba na světě se nazývá:', o: ['hlavatka podunajská (Hucho hucho)', 'tajmen sibiřský (Hucho taimen)', 'pstruh duhový (Oncorhynchus mykiss)', 'sivena americký (Salvelinus fontinalis)'], a: 1 },
+    { g: 'D', q: 'Makrela patří do:', o: ['hrdloploutvých (Gadiformes)', 'ostnoploutvých (Percomorpha)', 'lososotvárných (Salmoniformes)', 'máloostných (Cypriniformes)'], a: 1 },
+    // Skupina D - Zbytek (Gadiformes, Perciformes, Characiformes atd.)
+    { g: 'D', q: 'Hrdloploutví (Gadiformes) mají:', o: ['vždy osm párů vousů, břišní ploutve na úrovni hrudních', 'často jeden vous na bradě, břišní ploutve posunuté před hrudními', 'vždy šest párů vousů', 'často jeden vous na bradě, břišní ploutve na úrovni hrudních'], a: 1 },
+    { g: 'D', q: 'Pro ostnoploutvé (Perciformes) platí, že:', o: ['mají trny v ploutvích, hřbetní ploutev rozdělenou na dvě části, ktenoidní šupiny', 'pouze mořské druhy, cykloidní šupiny', 'rychlí plavci, bez postranní čáry', 'malý počet tvrdých paprsků, jedna hřbetní ploutev'], a: 0 },
+    { g: 'D', q: 'Mezisvalové kůstky nemá:', o: ['lín', 'pstruh', 'plotice', 'kapr'], a: 1 },
+    { g: 'D', q: 'Mezisvalové kůstky nemá:', o: ['karas', 'cejn', 'bolen', 'lipan'], a: 3 },
+    { g: 'D', q: 'Sleď patří mezi:', o: ['bezostné (Clupeiformes)', 'ostnoploutvé (Perciformes)', 'lososotvárné (Salmoniformes)', 'máloostné (Cypriniformes)'], a: 0 },
+    { g: 'D', q: 'Šprot patří mezi:', o: ['bezostné (Clupeiformes)', 'ostnoploutvé (Perciformes)', 'lososotvárné (Salmoniformes)', 'máloostné (Cypriniformes)'], a: 0 },
+    { g: 'D', q: 'Sardel patří mezi:', o: ['máloostné (Cypriniformes)', 'ostnoploutvé (Perciformes)', 'lososotvárné (Salmoniformes)', 'bezostné (Clupeiformes)'], a: 3 },
+    { g: 'D', q: 'Bezostní (Clupeiformes):', o: ['tuhé kostěné trny na hřbetu, ktenoidní šupiny', 'cykloidní šupiny, chybí plynový měchýř', 'mořské druhy, rychlí plavci, bez postranní čáry, plynový měchýř spojen s jícnem', 'malý počet tvrdých paprsků, požerákové zuby'], a: 2 },
+    { g: 'D', q: 'Piraňa náleží do řádu:', o: ['trnobřiší (Characiformes)', 'halančíkovci', 'ostnoploutví', 'čtverzubci'], a: 0 },
+    { g: 'D', q: 'Čtverzubci náleží do řádu:', o: ['Characiformes', 'Cyprinodontiformes', 'Perciformes', 'Tetraodontiformes'], a: 3 },
+    { g: 'D', q: 'Trnobřiší (Characiformes):', o: ['tuhé kostěné trny na hřbetu, ktenoidní šupiny, pohyblivý ústní aparát, mohou mít tukovou ploutvičku', 'vždy mají tukovou ploutvičku, Weberův orgán', 'nemají postranní čáru', 'malý počet tvrdých paprsků, požerákové zuby'], a: 0 },
+    { g: 'D', q: 'Čtverzubci (Tetraodontiformes):', o: ['tuhé kostěné trny na hřbetu', 'filtrace přes žábry', 'krátký ocas, tělo hranaté, vakovité vychlípení střeva, zuby jako zobákovité desky', 'drobní, pestře zbarvení, jedna hřbetní ploutev'], a: 2 },
+    { g: 'D', q: 'Halančíkovci (Cyprinodontiformes):', o: ['tuhé kostěné trny na hřbetu', 'rozdvojená tuková ploutvička', 'zuby srůstají do zobákovitých desek', 'drobní, pestře zbarvení, drobná ústa, velké oči, jedna hřbetní ploutev'], a: 3 },
+    { g: 'D', q: 'Mezi trnobřiché (Characiformes) patří:', o: ['živorodka Endlerova, mečovka mexická', 'neonka červená (Paracheirodon axeirodi), tetra citronová', 'čtverzubec trpasličí', 'halančík Gardnerův'], a: 1 },
+    { g: 'D', q: 'Mezi čtverzubce (Tetraodontiformes) patří:', o: ['živorodka Endlerova', 'neonka červená', 'čtverzubec trpasličí a čtverzubec amazonský', 'halančík Gardnerův'], a: 2 },
+    { g: 'D', q: 'Mezi halančíkovce (Cyprinodontiformes) patří:', o: ['živorodka Endlerova, mečovka mexická', 'neonka červená', 'čtverzubec trpasličí', 'halančík Gardnerův, štikovec páskovaný'], a: 3 },
+    { g: 'D', q: 'Sumci (Siluriformes):', o: ['nemají šupiny, často tuková ploutvička, vousky kolem úst a Weberův aparát', 'výrazně vzadu postavená hřbetní ploutev', 'vždy tuková ploutvička, bez hmatových vousků', 'drobní, pestře zbarvení'], a: 0 },
+    { g: 'D', q: 'Štikotvární (Esociformes) mají:', o: ['hřbetní ploutev rozdělenou na dvě části', 'výrazně vzadu postavenou hřbetní a řitní ploutev', 'hluboce vykrojenou ocasní ploutev', 'dlouhé vousky okolo úst'], a: 1 },
+    { g: 'D', q: 'Lososotvární (Salmoniformes):', o: ['nemají šupiny, vousky kolem úst', 'výrazně vzadu postavená hřbetní ploutev', 'tuková ploutvička, torpédovité tělo, drobné šupiny', 'drobní, malé oči, tlama bez zubů'], a: 2 },
+    { g: 'D', q: 'Mezi sumce (Siluriformes) s jedovou žlázou patří:', o: ['sumeček černý, sumeček americký', 'sumec velký, perutýn ohnivý', 'pancéřníček kropenatý', 'parma obecná'], a: 0 },
+    { g: 'D', q: 'Do štikotvárných (Esociformes) patří:', o: ['štika obecná, blatňák tmavý', 'štika obecná, vyza velká', 'štika obecná, hlavatka podunajská', 'štika obecná, vranka obecná'], a: 0 },
+    { g: 'D', q: 'Do lososotvárných (Salmoniformes) patří:', o: ['hlavatka obecná, lipan podhorní, pstruh obecný, vyza velká', 'hlavatka obecná, lipan podhorní, pstruh obecný, síh malý, siven americký', 'pstruh duhový, jeseter hladký', 'pstruh duhový, síh malý, okoun říční'], a: 1 },
+    { g: 'D', q: 'Hrdloploutví (Gadiformes):', o: ['břišní ploutve před prsními, prodloužená hřbetní i řitní ploutev, nepárový vous', 'nemají šupiny, Weberův aparát', 'tělo opancéřováno, nesouměrná ocasní ploutev', 'vždy tuková ploutvička, břišní ploutve u řitní'], a: 0 },
+    { g: 'D', q: 'Mezi hrdloploutvé (Gadiformes) patří:', o: ['okoun říční', 'mečovka zelená', 'koljuška tříostná', 'mník jednovousý'], a: 3 },
+    { g: 'D', q: 'Mezi halančíkovce (Cyprinodontiformes) patří:', o: ['mník jednovousý', 'mečovka zelená', 'koljuška tříostná', 'okoun říční'], a: 1 },
+    { g: 'D', q: 'Ostnoploutví (Perciformes) mají hřbetní ploutev:', o: ['nedělenou, tvrdé i měkké paprsky', 'nedělenou, jen tvrdé paprsky', 'rozdělenou, tvrdé paprsky v zadní části', 'rozdělenou na dvě části, tvrdé paprsky v přední části'], a: 3 },
+    { g: 'D', q: 'Mezi ostnoploutvé (Perciformes) v ČR řadíme:', o: ['cejna, cejnka, ostruchu', 'plotici, perlína, hrouzka', 'candáta, okouna, ježdíka', 'lína, karase, slunku'], a: 2 },
+    { g: 'D', q: 'Ostnoploutví (Perciformes) mezisvalové kůstky:', o: ['obligatorně mají', 'obligatorně nemají', 'fakultativně mají', 'fakultativně nemají'], a: 2 },
+    { g: 'D', q: 'Měsíčník svítivý (Mola mola) patří mezi:', o: ['trnobřiché', 'ostnoploutvé', 'hrdloploutvé', 'čtverzubce (Tetraodontiformes)'], a: 3 },
+    // Skupina E - Obojživelníci
+    { g: 'E', q: 'Anamniota (bezblanní) jsou:', o: ['obojživelníci, kruhoústí, paryby a ryby', 'plazi a ptáci', 'savci s výjimkou člověka', 'všichni obratlovci'], a: 0 },
+    { g: 'E', q: 'Charakteristické pro obojživelníky (Amphibia) je:', o: ['studenokrevnost, rozlišené zánártí a prsty, vajíčka bez obalu, embryo nevytváří obaly', 'primitivní teplokrevnost, embryo nevytváří obaly', 'studenokrevnost, nerozlišené zánártí, embryo nevytváří obaly', 'studenokrevnost, vajíčka s obalem, embryo vytváří obaly'], a: 0 },
+    { g: 'E', q: 'Kůže obojživelníků (Amphibia) je:', o: ['holá, bez slizových žláz, neschopnost barvoměny', 'holá, plná slizových žláz, obsahuje jedové žlázy, kožní dýchání, schopnost barvoměny', 'holá, bez jedových žláz, neschopnost barvoměny', 'šupinatá, plná slizových žláz, neumožňuje kožní dýchání'], a: 1 },
+    { g: 'E', q: 'Žebra obojživelníků (Amphibia):', o: ['jsou plně vyvinutá pouze u bezocasatých po celé délce', 'jsou plně vyvinutá pouze u bezocasatých v oblasti trupu', 'jsou plně vyvinutá pouze u ocasatých v oblasti trupu', 'jsou plně vyvinutá pouze u ocasatých po celé délce'], a: 2 },
+    { g: 'E', q: 'Pro lebku obojživelníků (Amphibia) platí:', o: ['plochá a široká, zánik jazylky, monokondylní', 'plochá a široká, vznik jazylky, monokondylní, části chrupavčité', 'plochá a úzká, zánik jazylky, bikondylní', 'plochá a široká, vznik jazylky, bikondylní, některé části stále chrupavčité'], a: 3 },
+    { g: 'E', q: 'Pro dýchání obojživelníků (Amphibia) platí:', o: ['larvy žábrami, dospělci vakovitou vychlípeninou trávicí trubice, kožní dýchání', 'larvy filamenty, dospělci vychlípeninou střeva', 'larvální i adultní vychlípeninou trávicí trubice, bez kožního dýchání', 'larvy sifonem, dospělci vychlípeninou trávicí trubice'], a: 0 },
+    { g: 'E', q: 'Jaký typ ledvin mají larvy obojživelníků (Amphibia)?', o: ['pronefrons', 'mezonefrons', 'metanefrons', 'paranefrons'], a: 0 },
+    { g: 'E', q: 'Jaký typ ledvin mají dospělci obojživelníků (Amphibia)?', o: ['pronefrons', 'opistonefros', 'metanefrons', 'paranefrons'], a: 1 },
+    { g: 'E', q: 'Srdce obojživelníků (Amphibia) je:', o: ['složité, dvě síně, tři komory', 'jednoduché, jedna síň, jedna komora', 'jednoduché, dvě síně, jedna komora', 'složité, dvě síně, dvě komory'], a: 2 },
+    { g: 'E', q: 'Koncový mozek obojživelníků (Amphibia) je:', o: ['řídící centrum', 'rovnovážný orgán', 'pro produkci svlékacího hormonu', 'relativně malý a slouží hlavně jako čichové centrum'], a: 3 },
+    { g: 'E', q: 'Z obojživelníků (Amphibia) je sluch důležitý především pro:', o: ['žáby', 'červory', 'velemloky', 'čolky'], a: 0 },
+    { g: 'E', q: 'Dospělí obojživelníci (Amphibia):', o: ['nemají uši vůbec vyvinuty', 'mají dvě sluchové kůstky k vnitřnímu uchu, vnější ucho není vyvinuto', 'mají jen střední ucho', 'mají jednu sluchovou kůstku k vnitřnímu uchu, vnější ucho částečně zakrnělé'], a: 1 },
+    { g: 'E', q: 'Larvální vývoj ocasatých obojživelníků (Amphibia) probíhá:', o: ['přes larvu, první se vyvíjejí zadní končetiny', 'přes nymfu, první se vyvíjejí zadní končetiny', 'přes larvu, první se vyvíjejí přední končetiny', 'přes nymfu, první se vyvíjejí přední končetiny'], a: 2 },
+    { g: 'E', q: 'Larvální vývoj bezocasých obojživelníků (Amphibia):', o: ['přes larvu, první se vyvíjejí zadní končetiny', 'přes nymfu, první se vyvíjejí zadní končetiny', 'přes larvu, první se vyvíjejí přední končetiny', 'přes nymfu, první se vyvíjejí přední končetiny'], a: 0 },
+    { g: 'E', q: 'Pro oplození obojživelníků (Amphibia) platí, že:', o: ['všichni mají vnitřní oplození', 'všichni mají vnější oplození', 'červoři a ocasatí vnější, bezocasí vnitřní', 'červoři a ocasatí vnitřní, bezocasí mají oplození vnější'], a: 3 },
+    { g: 'E', q: 'Mezi obojživelníky (Amphibia) patří:', o: ['červoři, ocasatí a žáby', 'ocasatí, žáby a haterie', 'ocasatí, žáby a želvy', 'červoři, ocasatí, žáby a mihule'], a: 0 },
+    { g: 'E', q: 'Charakteristické pro žáby (Anura) je:', o: ['ocas není vstřebán, žábry mají i dospělci', 'ocas je vstřebán, žábry mají jen dospělci', 'ocas není vstřebán, žábry mají jen pulci, nohy ke šplhání', 'ocas je vstřebán při metamorfóze, žábry mají jen pulci, nohy ke skákání nebo plavání'], a: 3 },
+    { g: 'E', q: 'Tentakula jsou:', o: ['kopulační ploutvičky', 'vysunovatelná hmatová tykadélka červorů', 'vychlípeniny střeva', 'vnější keříčkové žábry larev'], a: 1 },
+    { g: 'E', q: 'Mezi ocasaté obojživelníky (Caudata) patří:', o: ['surýn úhořovitý', 'felsuma madagaskarská', 'skokan skřehotavý', 'blatnice skvrnitá'], a: 0 },
+    { g: 'E', q: 'Mezi žáby (Anura) patří:', o: ['macarát jeskynní', 'axolotl mexický', 'pipa americká', 'kajmanka dravá'], a: 2 },
+    { g: 'E', q: 'Schopnost množit se v larválním stadiu se nazývá:', o: ['paratenie', 'juvenilotenie', 'neotenie', 'prototenie'], a: 2 },
+    // Skupina F - Plazi (Reptilia)
+    { g: 'E', q: 'Z ocasatých obojživelníků (Caudata) vyskytujících se na území ČR má výrazné černožluté zbarvení:', o: ['čolek horský', 'čolek velký', 'macarát jeskynní', 'mlok skvrnitý'], a: 3 },
+    { g: 'E', q: 'Charakteristika plazů (Reptilia):', o: ['zárodečné obaly, vaječné obaly, vejce na souši, mohutné svaly na lebce, tetrapodní obratlovci', 'bez zárodečných obalů, vaječné obaly, vejce na souši, mohutné svaly na lebce', 'zárodečné obaly, vaječné obaly, vejce ve vodě, zakrnělé svaly na lebce', 'bez zárodečných obalů, vaječné obaly, vejce na souši, mohutné svaly na lebce'], a: 0 },
+    { g: 'E', q: 'Mezi plazy patří:', o: ['želvy, hadi, ještěři, axolotli', 'želvy, hadi, ještěři, haterie, krokodýli', 'želvy, hadi, krokodýli, pralesničky', 'želvy, hadi, ještěři, macaráti, krokodýli'], a: 1 },
+    { g: 'E', q: 'Jelikož mezi plazy neřadíme ptáky, jsou označováni za skupinu:', o: ['monofyletickou', 'heterofyletickou', 'binomickou', 'parafyletickou'], a: 3 },
+    { g: 'E', q: 'Kůže plazů (Reptilia):', o: ['silně rohovatí, tvoří ganoidní šupiny, krunýř, štítky', 'silně rohovatí, tvoří epidermální šupiny, krunýř, štítky, chromatofory, drápy', 'silně rohovatí, tvoří ktenoidní šupiny, krunýř, štítky', 'silně rohovatí, tvoří cykloidní šupiny, krunýř, štítky'], a: 1 },
+    { g: 'E', q: 'Lebka plazů (Reptilia) je:', o: ['monokondylní – spojena s páteří jen jedním kloubním hrbolem', 'bikondylní – spojena s páteří dvěma kloubními hrboly', 'monokondylní – na páteř nasedá jen volně', 'bikondylní – spojena s páteří jen jedním kloubním hrbolem'], a: 0 },
+    { g: 'E', q: 'Typy lebek plazů (Reptilia):', o: ['anapsidní, synapsidní, parapsidní, euryapsidní', 'anapsidní, synapsidní, parapsidní, diapsidní', 'anapsidní, synapsidní, parapsidní, neuryapsidní, diapsidní', 'anapsidní, synapsidní, parapsidní, euryapsidní, diapsidní'], a: 3 },
+    { g: 'E', q: 'Typy chrupu plazů (Reptilia):', o: ['thekodontní, akrodontní, pleurodontní', 'prodontní, akrodontní, pleurodontní', 'thekodontní, mesodontní, pleurodontní', 'thekodontní, akrodontní, metadontní'], a: 0 },
+    { g: 'E', q: 'Hrudní kost (sternum) chybí u:', o: ['krokodýlů s výjimkou gaviálů', 'všech ještěrů a mořských želv', 'želv a hadů', 'haterií'], a: 2 },
+    { g: 'E', q: 'Plíce plazů (Reptilia) jsou:', o: ['primitivní, u hadů jen levá plíce', 'primitivní, někdy vakovité, u hadů jen pravá plíce, u krokodýlů a želv plně vyvinuté', 'primitivní, u hadů jen levá plíce, varani a mloci mají plně vyvinuté', 'primitivní, u hadů jen pravá plíce, u velemloků plně vyvinuté'], a: 1 },
+    { g: 'E', q: 'Jaký typ ledvin nacházíme u plazů (Reptilia)?', o: ['metanefros, moč do anusu', 'metanefros, moč do kloaky, vodní mají rozpustnou kys. močovou', 'metanefros, moč do kloaky, suchozemští mají dusíkaté látky v nerozpustné kys. močové', 'nepravé ledviny (Wolfova chodba)'], a: 2 },
+    { g: 'E', q: 'Srdce plazů (Reptilia) je:', o: ['čtyřkomorové s dokonale uzavřenou přepážkou', 'tříkomorové s perforovanou přepážkou u síní', 'tříkomorové s dokonale uzavřenou přepážkou u komor', 'čtyřkomorové, dvě předsíně a dvě komory, s perforovanou přepážkou u komor'], a: 3 },
+    { g: 'E', q: 'Co tvoří hlavní nervové centrum plazů (Reptilia):', o: ['koncový mozek, základní CNS, mozková kůra, mozeček, 12 párů hlavových nervů', 'koncový mozek, mozková kůra, 14 párů hlavových nervů', 'koncový mozek, mozeček, 16 párů hlavových nervů', 'koncový mozek, základní CNS, mozeček, 16 párů hlavových nervů'], a: 0 },
+    { g: 'E', q: 'Smyslové orgány plazů (Reptilia) lze obecně charakterizovat jako:', o: ['dokonalý zrak, Jacobsonův orgán, termoreceptory, sluch omezen', 'dobrý čich, Jacobsonův orgán, termoreceptory, třetí oko, sluch omezen, špatný zrak', 'dokonalý zrak, Jacobsonův orgán, chemoreceptory, sluch vynikající', 'dobrý čich, Jacobsonův orgán, chemoreceptory, sluch vynikající'], a: 1 },
+    { g: 'E', q: 'Pro rozmnožovací soustavu plazů (Reptilia) platí:', o: ['hermafrodité, vnější oplození', 'gonochoristé, samostatný orgán, vnější oplození', 'gonochoristé, pohlavní orgány párové, oplození vnitřní, ovoparie až viviparie', 'hermafrodité, vnitřní oplození'], a: 2 },
+    { g: 'E', q: 'Plazi (Reptilia) jsou jedinými obratlovci, u kterých je popsána:', o: ['neotenie', 'partenogeneze', 'metamorfóza', 'hibernace'], a: 1 },
+    { g: 'E', q: 'Pro rozmnožování želv (Testudines) platí:', o: ['vejce do vody, mláďata neschopná života', 'vejce na souši, mláďata neschopná života', 'vejce do vody, mláďata schopná života', 'želvy kladou vejce na souši, po vylíhnutí mláďata schopna samostatného života'], a: 3 },
+    { g: 'E', q: 'Pro rozmnožování hadů (Serpentes) platí:', o: ['hadi kladou vejce, někteří i viviparní, občasná péče o snůšku, vaječný zub mláďat', 'kladou vejce, obligatorně viviparní', 'kladou vejce, někteří i viviparní, žádná péče o snůšku', 'obligatorně oviviparní'], a: 0 },
+    { g: 'E', q: 'Pro rozmnožování ještěrů (Sauria) platí:', o: ['vejce do vody, obligatorně partenogenetičtí', 'ještěři kladou vejce, někteří viviparní nebo partenogenetičtí, bez péče, vaječný zub', 'kladou vejce, obligatorně péče o vajíčka', 'vejce do vody, vaječný zub'], a: 1 },
+    { g: 'E', q: 'Teplotní determinace pohlaví plazů (Reptilia):', o: ['při vyšší teplotě se líhnou samci', 'ovlivňuje poměr pohlaví jen u živorodých plazů', 'výše teploty ovlivňuje poměr pohlaví ve snůšce, při vyšší teplotě se líhnou samice, při nižší samci', 'výše teploty neovlivňuje pohlaví'], a: 2 },
+    // Skupina F - Pokračování (Želvy, Krokodýli, Šupinatí)
+    { g: 'E', q: 'Největší výskyt teplotní determinace pohlaví plazů (Reptilia) je znám u:', o: ['ještěrů', 'hadů', 'želv', 'haterií'], a: 2 },
+    { g: 'E', q: 'Charakteristika řádu krokodýlovití (Crocodylia):', o: ['mohutná hlava, lebka euryapsidní, rohovité štítky, osm párů žeber', 'mohutný ocas, lebka synapsidní, pravá bránice', 'mohutný ocas, lebka diapsidní pneumatizovaná, rohovité štítky, nepravá bránice, osm párů žeber a 14 obratlů', 'mohutná hlava, lebka anapsidní, pravá bránice'], a: 2 },
+    { g: 'E', q: 'Charakteristika řádu želvy (Testudines):', o: ['přítomnost dorsálního plastronu a ventrálního karapaxu', 'přítomnost ventrálního plastronu a dorsálního karapaxu, studenokrevnost, dlouhověkost, fytofágní nebo dravci', 'přítomnost laterálního plastronu a karapaxu', 'přítomnost ventrálního karapaxu, teplokrevnost'], a: 1 },
+    { g: 'E', q: 'Charakteristika řádu haterie (Rhynchocephalia):', o: ['rychlý metabolismus, zuby samostatně, bez temenního oka', 'pomalý metabolismus, zuby srostlé s čelistí, plně osifikovaná chorda', 'pomalý metabolismus, zuby srostlé s čelistí, není plně osifikovaná chorda, temenní oko, primitivní vakovité plíce', 'rychlý metabolismus, temenní oko'], a: 2 },
+    { g: 'E', q: 'Nepravou bránici má:', o: ['žralok', 'mlok', 'varan', 'krokodýl'], a: 3 },
+    { g: 'E', q: 'Lebka řádu želvy (Testudines) je:', o: ['synapsidní', 'anapsidní', 'parapsidní', 'diapsidní'], a: 1 },
+    { g: 'E', q: 'Krunýř řádu želvy (Testudines) je:', o: ['chrupavčitý, hřbetní karapax, břišní plastron', 'kostěný, hřbetní plastron, břišní karapax', 'kostěný, hřbetní karapax, břišní plastron', 'chrupavčitý, hřbetní plastron'], a: 2 },
+    { g: 'E', q: 'Spojení karapaxu a plastronu řádu želvy (Testudines) je:', o: ['chrupavčitým mostem', 'chrupavčitým trámcem', 'kostěným trámcem', 'kostěným mostem'], a: 3 },
+    { g: 'E', q: 'Kde dochází ke srůstům s kostrou u řádu želvy (Testudines)?', o: ['v oblasti žeber a obratlů', 'v oblasti krku a análního otvoru', 'v oblasti krku a žeber', 'v oblasti žeber a análního otvoru'], a: 0 },
+    { g: 'E', q: 'U řádu želvy (Testudines) rozeznáváme tyto podřády:', o: ['skrytonozí a skrytohlaví', 'skrytohrdlí a skrytohlaví', 'skrytohrdlí a skrytonosí', 'skrytonozí a skrytonosí'], a: 1 },
+    { g: 'E', q: 'Želvy ohýbající dlouhý krk ve vodorovné kličce a přikládající hlavu ze strany pod krunýř patří mezi:', o: ['skrytonozí', 'skrytohrdlí', 'skrytohlaví', 'skrytonosí'], a: 2 },
+    { g: 'E', q: 'Želvy zatahující hlavu pozpátku do krunýře a krk uvnitř esovitě ohýbající patří mezi:', o: ['skrytonozí', 'skrytohrdlí', 'skrytohlaví', 'skrytonosí'], a: 1 },
+    { g: 'E', q: 'Do podřádu skrytohrdlí (Cryptodira) patří:', o: ['kajmankovití', 'matamatovití', 'terekovití', 'pelomedúzovití'], a: 0 },
+    { g: 'E', q: 'Do podřádu skrytohlaví (Pleurodira) patří:', o: ['želvovití', 'karetovití', 'kožnatkovití', 'matamatovití'], a: 3 },
+    { g: 'E', q: 'Lebka krokodýlů (Crocodylia) je:', o: ['anapsidní', 'euryapsidní', 'parapsidní', 'diapsidní'], a: 3 },
+    { g: 'E', q: 'Kostra krokodýlů (Crocodylia) má:', o: ['60 obratlů, většina je v ocase', '50 obratlů, většina je v zádové části', '40 obratlů, většina je v krční části', '33 obratlů, většina je v bederní části'], a: 0 },
+    { g: 'E', q: 'K uzpůsobení k životu ve vodě krokodýlů (Crocodylia) patří:', o: ['plovací blány, hrtanová záklopka', 'plovací blány, hltanová záklopka', 'plovací blány, jícnová záklopka, uzavíratelné nozdry', 'plovací měchýřky'], a: 2 },
+    { g: 'E', q: 'Rozeznáváme tyto čeledi krokodýlů (Crocodylia):', o: ['krokodýlovití, aligátorovití, gaviálovití', 'kajmanovití, aligátorovití, gaviálovití', 'kajmanovití, krokodýlovití, gaviálovití', 'tomistomovití, krokodýlovití, aligátorovití'], a: 0 },
+    { g: 'E', q: 'Charakteristika čeledi krokodýlovití (Crocodylidae):', o: ['široký rypec, vidět jen horní zuby', 'dlouhé zužující se čelisti, při pohledu z boku jsou vidět horní i dolní zuby', 'pinzetovité čelisti, nozdry na konci', 'spodní čelist delší než horní'], a: 1 },
+    { g: 'E', q: 'Charakteristika čeledi aligátorovití (Alligatoridae):', o: ['široký rypec, v dolní čelisti je 4. zub zvětšený a zapadá do horní čelisti, vidět jen horní zuby', 'dlouhé zužující se čelisti', 'pinzetovité čelisti', 'spodní čelist delší než horní'], a: 0 },
+    { g: 'E', q: 'Charakteristika čeledi gaviálovití (Gavialidae):', o: ['široký rypec', 'dlouhé zužující se čelisti', 'pinzetovité čelisti, na konci horní čelisti výrazné nozdry', 'spodní čelist delší'], a: 2 },
+    { g: 'E', q: 'Zástupcem čeledi gaviálovití (Gavialidae) je:', o: ['aligátor severoamerický', 'kajman černý', 'krokodýl nilský', 'tomistoma úzkohlavá'], a: 3 },
+    { g: 'E', q: 'Zástupcem čeledi aligátorovití (Alligatoridae) je:', o: ['krokodýl mořský', 'kajman černý', 'krokodýl nilský', 'gaviál indický'], a: 1 },
+    { g: 'E', q: 'Zástupcem čeledi krokodýlovití (Crocodylidae) je:', o: ['aligátor severoamerický', 'kajman černý', 'krokodýl nilský', 'gaviál indický'], a: 2 },
+    { g: 'E', q: 'Největším druhem krokodýla na světě je:', o: ['krokodýl mořský', 'kajmánek trpasličí', 'krokodýl nilský', 'aligátor severoamerický'], a: 0 },
+    { g: 'E', q: 'Lebka šupinatých plazů (Squamata) je:', o: ['původně diapsidní, u recentních druhů však kinetická', 'bikondylní', 'monokondylní', 'původně kinetická'], a: 0 },
+    { g: 'E', q: 'Rozdvojený reprodukční orgán samců šupinatých plazů (Squamata) se nazývá:', o: ['dipenis', 'hemipenis', 'bipenis', 'polypenis'], a: 1 },
+    { g: 'E', q: 'Rozeznáváme tyto podřády šupinatých plazů (Squamata):', o: ['ještěrky, hadi, dvouplazi', 'ještěři, hadi, dvouplazi', 'ještěři, hadi, dvojdyšní', 'ještěrky, hadi, dvojdyšní'], a: 1 },
+    { g: 'E', q: 'Charakteristika podřádu ještěři (Sauria):', o: ['plně vyvinuté končetiny, střední ucho a nepohyblivé oční víčko', 'částečně vyvinuté končetiny, jen vnější ucho', 'plně vyvinuté končetiny, střední ucho a pohyblivé oční víčko', 'částečně vyvinuté končetiny, střední ucho'], a: 2 },
+    { g: 'E', q: 'Charakteristika podřádu hadi (Serpentes):', o: ['fytofágové, tělo bez končetin', 'predátoři, pohyblivě spojená oční víčka', 'saprofágové, Weberův aparát', 'predátoři, tělo bez končetin či s jejich rudimenty, až 400 obratlů, pohyblivě spojená lebka, Jacobsonův orgán'], a: 3 },
+    { g: 'E', q: 'Zástupci podřádu ještěři (Sauria) jsou:', o: ['bazilišci', 'vodnáři', 'vejcožrouti', 'psohlavci'], a: 0 },
+    { g: 'E', q: 'Zástupci podřádu hadi (Serpentes) jsou:', o: ['haterie', 'agamy', 'bojgy', 'leguáni'], a: 2 },
+    { g: 'E', q: 'Pro chřestýše charakteristické chřestidlo se s věkem hada:', o: ['zvětšuje', 'nezvětšuje', 'redukuje', 'rozdvojuje'], a: 0 },
+    // Skupina F - Ptáci (Aves)
+    { g: 'F', q: 'Charakteristické pro ptáky (Aves) je:', o: ['suchá kůže, monokondylní lebka, čtyřdílné srdce, bezzubý zobák, křídla', 'vlhká kůže, monokondylní lebka, čtyřdílné srdce, ozubený zobák', 'suchá kůže, bikondylní lebka, vnější ucho, trojdílné srdce', 'vlhká kůže, bikondylní lebka, trojdílné srdce, bezzubý zobák'], a: 0 },
+    { g: 'F', q: 'Kůže ptáků (Aves) je:', o: ['vlhká a tenká', 'slizová a tlustá', 'suchá a tenká', 'mastná a tlustá'], a: 2 },
+    { g: 'F', q: 'Rozeznáváme tyto typy peří ptáků (Aves):', o: ['krycí pera, prašná pera', 'krycí pera, prachová pera', 'krycí pera, vzdušná pera', 'létací pera, prašivá pera'], a: 1 },
+    { g: 'F', q: 'Kostra ptáků (Aves) je charakterizována jako:', o: ['lebka diapsidní, monokondylní, srůsty obratlů, dvoudílná žebra, pneumatizované kosti', 'lebka synapsidní, volné obratle, stálý počet krčních obratlů', 'lebka parapsidní, trojdílná žebra, pneumatizované kosti', 'lebka anapsidní, volné obratle, jednodílná žebra'], a: 0 },
+    { g: 'F', q: 'Hrudní koš ptáků (Aves) tvoří:', o: ['rotarium, osten hrudní kosti, trojdílná žebra', 'notarium, hřeben hrudní kosti (carina), dvoudílná žebra', 'rotarium, hřeben hrudní kosti, trojdílná žebra', 'notarium, osten hrudní kosti, dvoudílná žebra'], a: 1 },
+    { g: 'F', q: 'Počet obratlů u ptáků (Aves):', o: ['16 krční, 3-10 hrudní, 5-8 urostyl', '8-26 prothorakální, 2-6 hrudní, 5-8 pygostyl', '10-26 krční, 3-10 hrudní, 5-8 pygostyl', '10-26 hlavové, 2-6 hrudní, 5-8 urostyl'], a: 2 },
+    { g: 'F', q: 'Svaly zapojené do aktivního letu ptáků (Aves):', o: ['velký prsní sval a klíčový sval', 'střední prsní sval a klíčový sval', 'střední prsní sval a podklíčkový sval', 'velký prsní sval a podklíčkový sval'], a: 3 },
+    { g: 'F', q: 'Největším svalem ptáků (Aves) je:', o: ['prsní sval (musculus pectoralis)', 'podklíčkový sval', 'stehenní sval', 'jazylka'], a: 0 },
+    { g: 'F', q: 'Nervová soustava ptáků (Aves) je:', o: ['podobná spíše plazímu typu, dochází k rozvoji mozečku', 'podobná spíše savčímu, rozvoj prodloužené míchy', 'podobná spíše plazímu, rozvoj prodloužené míchy', 'podobná spíše savčímu, rozvoj mozečku'], a: 0 },
+    { g: 'F', q: 'Sluch ptáků (Aves) je zajišťován:', o: ['třemi sluchovými kůstkami, dlouhým boltcem', 'dvěma sluchovými kůstkami, krátkým boltcem', 'jednou sluchovou kůstkou (columella), krátkým zvukovodem, vnější boltec chybí', 'dlouhým zvukovodem, chybí sluchové kůstky'], a: 2 },
+    { g: 'F', q: 'Části trávící soustavy ptáků (Aves):', o: ['zobák, jícen – vole, svalnatý a žlaznatý žaludek, tři tenká střeva', 'zobák, hltan, svalový žaludek, tenké střevo, kloaka', 'zobák, hltan, předžaludek, tři slepá střeva', 'zobák, jícen – vole, svalnatý a žlaznatý žaludek, tenké střevo, dvě slepá střeva, tlusté střevo, kloaka'], a: 3 },
+    { g: 'F', q: 'Dýchací soustava ptáků (Aves):', o: ['velmi výkonná, plíce jsou malé, vyvinuté vzdušné vaky', 'málo výkonná, plíce jsou malé', 'velmi výkonná, plíce velké, vyvinuté vzdušné vaky', 'málo výkonná, plíce velké, jeden vzdušný vak'], a: 0 },
+    { g: 'F', q: 'Ledviny ptáků (Aves) lze charakterizovat jako:', o: ['párové ledviny, Havlova klička, močovina', 'nepárové ledviny, Hawkinsova klička, močovina', 'párové ledviny (metanefros), Henleova klička vyvinuta, odpadní látkou je kyselina močová', 'nepárové ledviny, Hallova klička, kyselina močová'], a: 2 },
+    { g: 'F', q: 'Hlavním produktem metabolismu dusíku ptáků (Aves) je:', o: ['kyselina močová', 'amoniak', 'močovina', 'metan'], a: 0 },
+    { g: 'F', q: 'Močový měchýř ptáků (Aves) je:', o: ['obligatorně přítomen', 'obligatorně chybí', 'většinou zbytnělý', 'většinou chybí'], a: 3 },
+    { g: 'F', q: 'Mezi zvláštnosti rozmnožování ptáků (Aves) řadíme:', o: ['časté krycí zbarvení vajec, mláďata obligatorně nidikolní', 'krycí zbarvení vajec, mláďata obligatorně nidifugní', 'časté krycí zbarvení vajec s vápenitou skořápkou, mláďata nidifugní i nidikolní dle druhu', 'výstražné zbarvení kožovitých vajec'], a: 2 },
+    { g: 'F', q: 'Pro cévní soustavu ptáků (Aves) platí:', o: ['srdce třídílné, pouze pravá aorta', 'srdce čtyřdílné, nejmenší srdce k tělu', 'srdce třídílné, zcela oddělené komory', 'srdce čtyřdílné, komory zcela oddělené, největší srdce v poměru k tělu, pouze pravá aorta'], a: 3 },
+    { g: 'F', q: 'Původní kožní žlázou ptáků (Aves) je:', o: ['rýdovací žláza', 'kostrční žláza (glandula uropygii)', 'podjazylková žláza', 'běháková žláza'], a: 1 },
+    // Skupina F - Ptáci - Morfologie a Systematika (část 1)
+    { g: 'F', q: 'Obrysové pero je tvořeno:', o: ['centrálním stvolem (spodní brk, horní osten) a praporem', 'centrálním brkem (spodní stvol, horní osten) a praporem', 'centrálním praporem a ostnem', 'centrálním ostnem a brkem'], a: 0 },
+    { g: 'F', q: 'Drobná pírka v koutcích zobáku s hmatovou funkcí se nazývají:', o: ['paostny', 'pyga', 'vibrisy', 'alula'], a: 2 },
+    { g: 'F', q: 'Ptáci (Aves) mají na zadní končetině:', o: ['čtyři prsty (pátý vymizel)', 'tři prsty', 'pět prstů', 'nemají prsty, mají drápy'], a: 0 },
+    { g: 'F', q: 'Šplhavá noha se u ptáků (Aves) nazývá:', o: ['syndaktylní', 'pamprodaktylní', 'anizodaktylní', 'zygodaktylní'], a: 3 },
+    { g: 'F', q: 'Varlata samců ptáků (Aves) jsou:', o: ['velká v šourku', 'velká, bez šourku', 'malá, v době rozmnožování se výrazně zvětšují, šourek chybí', 'malá v šourku'], a: 2 },
+    { g: 'F', q: 'Syrinx je:', o: ['hlasové ústrojí ptáků', 'hltan obojživelníků', 'rovnovážný orgán netopýrů', 'kost křížová ptáků'], a: 0 },
+    { g: 'F', q: 'Oči ptáků (Aves) mají:', o: ['jedno víčko', 'dvě víčka', 'tři víčka (včetně mžurky)', 'čtyři víčka'], a: 2 },
+    { g: 'F', q: 'Vzhledem k předkům patří ptáci (Aves) mezi:', o: ['ptakořitné dinosaury', 'plazopánvé dinosaury (Theropoda)', 'ptakoještěry', 'sauropodní dinosaury'], a: 1 },
+    { g: 'F', q: 'Tzv. pružný roh kamišovitých (Anhimidae) má původ v:', o: ['čelní chrupavce', 'praporu pera', 'ostnu pera', 'měkkém ozobí'], a: 2 },
+    { g: 'F', q: 'Řád hrabaví (Galliformes) lze charakterizovat:', o: ['krátký zobák, masité hřebeny, ostruhy, anizodaktylní noha', 'dlouhý krk, vroubkovaný zobák, plovací blány', 'nelétaví, kosti nepneumatizované', 'dlouhý zobák, končetiny vzadu'], a: 0 },
+    { g: 'F', q: 'Čeledi řádu hrabaví (Galliformes) jsou:', o: ['bažantovití, ibisovití, hokovití', 'bažantovití, perličkovití, ibisovití', 'bažantovití, hadilovovití, tabonovití', 'bažantovití, perličkovití, křepelovití, hokovití, tabonovití'], a: 3 },
+    { g: 'F', q: 'Do čeledi bažantovití (Phasianidae) patří:', o: ['páv korunkatý, jeřábek lesní, koroptev polní', 'tabon lesní, křepelka polní', 'křepelka polní, perlička kropenatá', 'čačalaka, krocan domácí'], a: 0 },
+    { g: 'F', q: 'Zástupcem čeledi křepelovití (Odontophoridae) je:', o: ['křepelka polní', 'perlička kropenatá', 'křepel kalifornský', 'bažant lesní'], a: 2 },
+    { g: 'F', q: 'Řád vrubozobí (Anseriformes) lze charakterizovat:', o: ['dlouhý krk, krátký vroubkovaný zobák, plovací blány', 'krátký zobák, masité hřebeny', 'nelétaví, kosti nepneumatizované', 'dlouhý zobák, končetiny vzadu'], a: 0 },
+    { g: 'F', q: 'Do řádu vrubozobí (Anseriformes) patří:', o: ['trubkonosí, tučňáci', 'kamišovití, kachnovití', 'ibisovití, terejové', 'chřástalovití, jeřábovití'], a: 1 },
+    { g: 'F', q: 'Mezi kachny (Anatinae) patří:', o: ['kachny plovavé, slípky', 'rybáci, jespáci', 'potápky, potáplice', 'kachny plovavé, kachny potápivé, morčáci, pižmovky, kajky'], a: 3 },
+    { g: 'F', q: 'Tučňáky (Sphenisciformes) lze charakterizovat:', o: ['dlouhý krk, plovací blány', 'vodní, nelétaví, rybožraví, kosti nepneumatizované, supraorbitální žlázy', 'masité hřebeny, ostruhy', 'extrémně vzadu posunuté končetiny'], a: 1 },
+    { g: 'F', q: 'Potáplice (Gaviiformes) lze charakterizovat:', o: ['dlouhý vroubkovaný zobák', 'kosti nepneumatizované', 'nohy s kožním lemem', 'končetiny extrémně vzadu, nohy plovavé s blánou, dlouhý špičatý zobák'], a: 3 },
+    { g: 'F', q: 'Potápky (Podicipediformes) lze charakterizovat:', o: ['vroubkovaný zobák', 'nelétaví, rybožraví', 'končetiny extrémně vzadu, nohy s kožním lemem, spirálovité krycí peří', 'dlouhý špičatý zobák'], a: 2 },
+    { g: 'F', q: 'Největším tučňákem (Sphenisciformes) je:', o: ['tučňák oslí', 'tučňák galapážský', 'tučňák brýlový', 'tučňák císařský'], a: 3 },
+    { g: 'F', q: 'Potáplice (Gaviiformes) získaly své jméno podle toho, že:', o: ['žijí trvale pod vodou', 'vodu vytlačují z plic', 'se za potravou potápí až do hloubky několika desítek metrů', 'se nedokážou potopit'], a: 2 },
+    { g: 'F', q: 'Největší evropskou potápkou (Podicipediformes) je:', o: ['potápka roháč', 'potápka malá', 'potápka černokrká', 'potápka obrovská'], a: 0 },
+    // Skupina F - Ptáci (Systematika a ekomorfologie)
+    { g: 'F', q: 'Noha kormorána (řád Suliformes) je:', o: ['zygodaktylní s blánou mezi třemi prsty', 'syndaktilní s plovací blánou', 'pamprodaktylní bez plovací blány', 'anizodaktylní s plovací blánou mezi čtyřmi prsty'], a: 3 },
+    { g: 'F', q: 'Noha kachny (řád Anseriformes) je:', o: ['anizodaktylní s plovací blánou mezi třemi prsty', 'syndaktilní s plovací blánou', 'pamprodaktylní s plovací blánou', 'zygodaktylní s blánou mezi čtyřmi prsty'], a: 0 },
+    { g: 'F', q: 'Noha potápky (řád Podicipediformes) je:', o: ['anizodaktylní s lemem', 'syndaktilní s plovací blánou', 'pamprodaktylní s plovací blánou', 'zygodaktylní s plovací blánou'], a: 0 },
+    { g: 'F', q: 'Charakteristické pro trubkonosé (Procellariiformes) je:', o: ['trubkovité nozdry, vynikající letci, blány mezi třemi prsty', 'plovací blána mezi všemi prsty včetně palce', 'dlouhý krk, krátký vroubkovaný zobák', 'krátký zobák, masité hřebeny, ostruhy'], a: 0 },
+    { g: 'F', q: 'Charakteristické pro veslonohé (Pelecaniformes) je:', o: ['trubkovité nozdry, mořské druhy', 'plovací blána mezi všemi prsty včetně palce, hrdelní vak, redukované nozdry', 'dlouhý krk, krátký vroubkovaný zobák', 'krátký zobák, ostruhy na nohách'], a: 1 },
+    { g: 'F', q: 'Zástupci trubkonosých (Procellariiformes) jsou:', o: ['rorýs obecný, buřňák obrovský', 'vlaštovka obecná, jiřička obecná', 'albatros stěhovavý, buřňák obrovský', 'albatros stěhovavý, mlynařík dlouhoocasý'], a: 2 },
+    { g: 'F', q: 'Zástupcem terejů (Suliformes) je:', o: ['ibis posvátný', 'pelikán bílý', 'buřňák obrovský', 'kormorán rudonohý'], a: 3 },
+    { g: 'F', q: 'Charakteristické pro čápy (Ciconiiformes) je:', o: ['dlouhý zobák, krk i nohy, nízko posazený palec bez blány', 'plovací blána mezi všemi prsty', 'krátký vroubkovaný zobák, plovací blány', 'krátký zobák, masité hřebeny'], a: 0 },
+    { g: 'F', q: 'Charakteristické pro plameňáky (Phoenicopteriformes) je:', o: ['výrazně dolů lomený zobák, dlouhý krk i nohy, nohy bez palce s blánou', 'dlouhý zobák, nízko posazený palec bez blány', 'hrdelní vak, redukované nozdry', 'vzadu postavené končetiny'], a: 0 },
+    { g: 'F', q: 'Zobák s kožovitým hrdelním vakem a roztažitelný jícen má:', o: ['tabon', 'plameňák', 'emu', 'pelikán'], a: 3 },
+    { g: 'F', q: 'Plameňáci (Phoenicopteriformes) mají:', o: ['dobrý sluch, špatný zrak', 'dobrý zrak, avšak velice špatný čich', 'dobrý čich, špatný zrak', 'dobrý čich, špatný sluch'], a: 1 },
+    { g: 'F', q: 'Nápadný vak na voleti, který při toku nafukuje, má:', o: ['čáp černý', 'kvakoš noční', 'pelikán bílý', 'marabu africký'], a: 3 },
+    { g: 'F', q: 'Zástupcem brodivých (Ciconiiformes) jsou:', o: ['terej bílý, pelikán bílý', 'hadilov písař, husice nilská', 'plameňák růžový, nandu pampový', 'kvakoš noční, marabu africký'], a: 3 },
+    { g: 'F', q: 'Zástupcem brodivých se lžícovitě rozšířeným zobákem je:', o: ['bukač velký', 'kolpík bílý', 'ibis posvátný', 'volavka popelavá'], a: 1 },
+    { g: 'F', q: 'Volavkou s krátkým krkem a dvěma dlouhými pery na hlavě je:', o: ['kolpík bílý', 'volavka stříbřitá', 'volavka popelavá', 'kvakoš noční'], a: 3 },
+    { g: 'F', q: 'Běžci (Palaeognathae):', o: ['zakrnělá křídla, nemají kostrční žlázu ani hřeben na kosti hrudní', 'zakrnělá křídla, hřeben hrudní kosti vyvinut', 'zakrnělá křídla, mají kostrční žlázu', 'dlouhá křídla, bez hřebene'], a: 0 },
+    { g: 'F', q: 'Mezi běžce (Palaeognathae) nepatří:', o: ['kasuár, pštros', 'nandu, tinama', 'terej, člunozobec', 'emu, kivi'], a: 2 },
+    { g: 'F', q: 'Pro dravce (Accipitriformes) je charakteristické:', o: ['zejk, hákovitý zobák, drápy', 'anyzodaktylní noha, absence zejku, hákovitý zobák s měkkým ozobím, drápy', 'kráčivá noha, krátká křídla', 'brodivé nohy, dlouhá křídla'], a: 1 },
+    { g: 'F', q: 'Pro sokoly (Falconiformes) je charakteristické:', o: ['anyzodaktylní noha, zejk, hákovitě zahnutý zobák s měkkým ozobím, drápy', 'absence zejku, drápy', 'kráčivá noha', 'brodivé nohy'], a: 0 },
+    { g: 'F', q: 'Pro krátkokřídlé (Gruiformes) je charakteristické:', o: ['zejk, hákovitý zobák', 'anyzodaktylní noha, absence zejku', 'kráčivá noha s vysoko posazeným palcem, většinou krátká křídla', 'brodivé nohy, dlouhá křídla'], a: 2 },
+    { g: 'F', q: 'Pro dlouhokřídlé (Charadriiformes) je charakteristické:', o: ['zejk, hákovitý zobák', 'absence zejku, drápy', 'kráčivá noha', 'brodivé nohy (s krátkým či chybějícím palcem), dlouhá křídla'], a: 3 },
+    { g: 'F', q: 'Pro měkkozobé (Columbiformes) je charakteristické:', o: ['šplhavá noha, bez volete', 'šplhavá noha, zahnutý zobák', 'měkké peří se závojem, zahnutý zobák', 'měkké ozobí, vole s dvěma vaky, žaludek s trny, prachové větve obrysových per'], a: 3 },
+    { g: 'F', q: 'Pro papoušky (Psittaciformes) je charakteristické:', o: ['šplhavá noha, bez volete', 'šplhavá noha s vratiprstem, silný a zahnutý zobák, drobivý prach, vysoká inteligence', 'měkké peří se závojem', 'měkké ozobí, vole s dvěma vaky'], a: 1 },
+    { g: 'F', q: 'Pro kukačky (Cuculiformes) je charakteristické:', o: ['šplhavá noha s vratiprstem, bez volete, zakulacená křídla, rozdvojená opeřená kostrční žláza', 'silný a zahnutý zobák', 'měkké peří se závojem', 'měkké ozobí'], a: 0 },
+    { g: 'F', q: 'Pro sovy (Strigiformes) je charakteristické:', o: ['šplhavá noha, bez volete', 'šplhavá noha, zahnutý zobák', 'hlava pohyblivá, měkké peří se závojem, zobák zahnutý od kořene, výborný zrak a sluch', 'měkké ozobí, žaludek s trny'], a: 2 },
+    // Skupina F - Ptáci (Lelkové, Svišťouni, Šplhavci, Pěvci a zajímavosti)
+    { g: 'F', q: 'Pro lelky (Caprimulgiformes) je charakteristické:', o: ['krátká ramenní část křídla', 'zploštělá hlava, kryptické zbarvení, široce rozeklaný a velmi krátký zobák', 'šplhavá noha s vratiprstem', 'srostlé dva prostřední prsty'], a: 1 },
+    { g: 'F', q: 'Pro srostloprsté (Coraciiformes) je charakteristické:', o: ['krátká ramenní část křídla', 'zploštělá hlava', 'šplhavá noha s vratiprstem', 'částečně srostlé dva prostřední prsty, pestré zbarvení, hloubení nor'], a: 3 },
+    { g: 'F', q: 'Pro svišťouny (Apodiformes) je charakteristické:', o: ['krátká ramenní část křídla a dlouhá ruční část, vysoký hřeben prsní kosti, slabé nohy', 'zploštělá hlava', 'šplhavá noha', 'srostlé prsty'], a: 0 },
+    { g: 'F', q: 'Pro šplhavce (Piciformes) je charakteristické:', o: ['krátká ramenní část křídla', 'zploštělá hlava', 'šplhavá noha s vratiprstem, silný zobák, hnízdění v dutinách', 'srostlé prsty'], a: 2 },
+    { g: 'F', q: 'Pro pěvce (Passeriformes) je charakteristické:', o: ['krátká ramenní část křídla', 'anizodaktylní noha, vyvinut syrinx, zakrnělá slepá střeva', 'šplhavá noha', 'srostlé prsty'], a: 1 },
+    { g: 'F', q: 'Vířivý let umožněný pohyblivým ramenním kloubem a specifickou stavbou křídla je typický pro:', o: ['poštolky', 'ledňáčky', 'sovy', 'kolibříky'], a: 3 },
+    { g: 'F', q: 'Který pták má tak dlouhá křídla a krátké nohy, že nedokáže vzlétnout ze země?', o: ['rorýs obecný', 'mandelík hajní', 'mlynařík dlouhoocasý', 'emu hnědý'], a: 0 },
+    { g: 'F', q: 'Schopnost echolokace má vyvinutou tento pták:', o: ['rorýs obecný', 'gvačaro jeskynní', 'nestor kea', 'kasuár přilbový'], a: 1 },
+    { g: 'F', q: 'Která sova má na hlavě chvostky?', o: ['kulíšek nejmenší', 'sovice sněžní', 'kalous ušatý', 'sova pálená'], a: 2 },
+    { g: 'F', q: 'Hnízdní parazitismus je typický pro:', o: ['kulíška nejmenšího', 'roselu pestrou', 'kavku obecnou', 'kukačku obecnou'], a: 3 },
+    { g: 'F', q: 'Největším pěvcem (Passeriformes) na území ČR je:', o: ['krkavec velký', 'zoborožec kaferský', 'skorec vodní', 'žluva hajní'], a: 0 },
+    { g: 'F', q: 'Šplhavcem (Piciformes), jehož potravu tvoří hlavně mravenci, je:', o: ['krutihlav obecný', 'žluna zelená', 'datel černý', 'žluva hajní'], a: 1 },
+    { g: 'F', q: 'Výraznou chocholku na hlavě má:', o: ['dudek chocholatý', 'ara ararauna', 'kasuár přilbový', 'vlha pestrá'], a: 1 },
+    { g: 'F', q: 'Částečně mrchožravým papouškem (Psittaciformes) je:', o: ['papoušek šedý', 'ara ararauna', 'nestor kea', 'rosela pestrá'], a: 2 },
+    { g: 'F', q: 'Největším původním evropským holubem (Columbidae) je:', o: ['holub skalní', 'korunáč vějířový', 'holub hřivnáč', 'holub doupňák'], a: 2 },
+    { g: 'F', q: 'Který pták se dokáže obratně udržet na větvích stromů, i když má veslovací nohu?', o: ['kachna divoká', 'člunozobec africký', 'kormorán velký', 'holub doupňák'], a: 2 },
+    { g: 'F', q: 'Vidlicovitě vykrojený ocas a třepotavý let nad hladinou je typický pro:', o: ['ledňáček říční', 'skorec vodní', 'racek chechtavý', 'rybák obecný'], a: 3 },
+    { g: 'F', q: 'Dlouhá průdušnice v prohlubni prsní kosti, umožňující dutý hlas na dálku, je typická pro:', o: ['jeřáby', 'papoušky', 'lelky', 'kukačky'], a: 0 },
+    { g: 'F', q: 'Rychlosti až 389 km/h při střemhlavém letu dosahuje:', o: ['raroh velký', 'sokol stěhovavý', 'ostříž lesní', 'dřemlík tundrový'], a: 1 },
+    { g: 'F', q: 'Zobákem s překříženými špičkami se vyznačuje:', o: ['hýl obecný', 'křivka obecná', 'špaček obecný', 'dlask tlustozobý'], a: 1 },
+    { g: 'F', q: 'Hlavou dolů dokáže šplhat tento pták:', o: ['brhlík lesní', 'datel černý', 'žluna šedá', 'šoupálek krátkoprstý'], a: 0 },
+    { g: 'F', q: 'Plochý kámen, na kterém drozd rozbíjí ulity plžů, se nazývá:', o: ['buchar', 'mlat', 'křapka', 'kovadlinka'], a: 3 },
+    { g: 'F', q: 'Krátká křídla k plavání pod vodou a málo pneumatizovaná kostra charakterizují:', o: ['rybák dlouhoocasý', 'potápka roháč', 'skorec vodní', 'ledňáček říční'], a: 2 },
+    { g: 'F', q: 'Hákovitě zahnutý zobák se zejkem má:', o: ['moták pochop', 'ťuhýk šedý', 'luňák hnědý', 'datel černý'], a: 1 },
+    { g: 'F', q: 'Největším tukanovitým (Ramphastidae) ptákem je:', o: ['zoborožec kaferský', 'tukan obrovský', 'kasuár přilbový', 'drop velký'], a: 1 },
+    { g: 'F', q: 'Do řádu šplhavci (Piciformes) patří tyto čeledi:', o: ['datlovití a tukanovití', 'strakapoudovití a brhlíkovití', 'žlunovití a žluvovití', 'šoupálkovití a krutihlavovití'], a: 0 },
+    { g: 'F', q: 'Nosní dírky na špičce citlivého zobáku mají:', o: ['kiviovití', 'kamišovití', 'perličkovití', 'ibisovití'], a: 0 },
+    { g: 'F', q: 'Kosmopolitně rozšířeným a nejpočetnějším volně žijícím ptákem je:', o: ['pěnkava obecná', 'čáp bílý', 'skorec vodní', 'vrabec domácí'], a: 3 },
+    { g: 'F', q: 'Druhově nejbohatším ptačím řádem jsou:', o: ['šplhavci', 'krátkokřídlí', 'měkkozobí', 'pěvci'], a: 3 },
+    { g: 'F', q: 'Pro volavku popelavou v letu je typické:', o: ['esovitě prohnutý krk a dozadu natažené nohy', 'natažený krk a pokrčené nohy', 'esovitě prohnutý krk a pokrčené nohy', 'natažený krk a dozadu natažené nohy'], a: 0 },
+    // Skupina G - Savci (Mammalia)
+    { g: 'G', q: 'Střední ucho savců (Mammalia) má:', o: ['jednu sluchovou kůstku', 'dvě sluchové kůstky', 'tři sluchové kůstky', 'čtyři sluchové kůstky'], a: 2 },
+    { g: 'G', q: 'Spodní čelist savců (Mammalia) tvoří:', o: ['jedna párová kost', 'dvě párové kosti', 'trojčetná nepárová kost', 'čtyřčetná nepárová kost'], a: 0 },
+    { g: 'G', q: 'Připojení lebky k páteři savců (Mammalia) je:', o: ['monokondylní', 'bikondylní', 'trikondylní', 'quadrokondylní'], a: 1 },
+    { g: 'G', q: 'Připojení přední a zadní končetiny k páteři savců tvoří:', o: ['lopatková pletenina, pletenec kyčelní', 'pletenec rýčový, pletenec pánevní', 'pletenec lopatkový, pletenec pánevní', 'pletenec frontální, pletenec kaudální'], a: 2 },
+    { g: 'G', q: 'Nejrozvinutější částí mozku savců (Mammalia) je:', o: ['mozeček', 'mezimozek', 'Varolův most', 'koncový mozek'], a: 3 },
+    { g: 'G', q: 'Primárním smyslem savců (Mammalia) je:', o: ['zrak', 'chuť', 'čich', 'hmat'], a: 2 },
+    { g: 'G', q: 'Mléčné žlázy savců (Mammalia) se vyvinuly z:', o: ['aromatických mazových žláz', 'apokrinních potních žláz', 'granulárních smíšených žláz', 'vývodných cest pohlavních'], a: 1 },
+    { g: 'G', q: 'Chrup savců (Mammalia) lze obecně popsat jako:', o: ['progresivní, canini, praemolares, molares', 'incisivní, canini, praemolares, molares', 'incisivní, felini, praemolares, molares', 'asertivní, canini, praemolares, amorales'], a: 1 },
+    { g: 'G', q: 'Rozdíl v kostře hrudního koše ptáků a savců:', o: ['ptáci dvoudílná žebra pneumatizovaná, savci jednodílná pneumatizovaná', 'ptáci dvoudílná žebra pneumatizovaná, savci jednodílná nepneumatizovaná', 'ptáci jednodílná žebra pneumatizovaná, savci dvoudílná nepneumatizovaná', 'ptáci jednodílná nepneumatizovaná, savci dvoudílná pneumatizovaná'], a: 1 },
+    { g: 'G', q: 'Podtřídami savců (Mammalia) jsou:', o: ['vejcorodí a živorodí', 'vejcoživorodí a živorodí', 'parentálové a živorodí', 'vejconosní a živorodkovití'], a: 0 },
+    { g: 'G', q: 'Infratřídami živorodých savců (Theria) jsou:', o: ['vakovití a placentálové', 'vačnatci a kýtovití', 'vačnatci a placentálové', 'vačnatci a kytovci'], a: 2 },
+    { g: 'G', q: 'Charakteristické pro podtřídu vejcorodí (Protheria) je:', o: ['kloaka, bez šourku, funkční oba vaječníky', 'pochva, bez šourku, funkční pouze jeden vaječník', 'kloaka, se šourkem, funkční oba vaječníky', 'kloaka, bez šourku, funkční pouze jeden vaječník'], a: 3 },
+    { g: 'G', q: 'Charakteristické pro podtřídu živorodí (Theria) je:', o: ['vždy bez šourku, nikdy penisová kost', 'většinou šourek, často penisová kost, lopatkový pletenec', 'většinou šourek, nikdy penisová kost', 'vždy šourek, prstový pletenec'], a: 1 },
+    { g: 'G', q: 'Řády podtřídy živorodí (Theria) mimo jiné jsou:', o: ['letouni, primáti, chudozubí, hlodavci, zajíci, šelmy', 'letouni, ježury, vrubozubí', 'létavci, primáni, chudozubí, hlodavci', 'letouni, primáti, dravci'], a: 0 },
+    { g: 'G', q: 'Mláďata vačnatců (Metatheria):', o: ['rodí se málo vyvinutá, samice mají placentu', 'se rodí málo vyvinutá, samice nemají placentu', 'rodí se plně vyvinutá, samice nemají placentu', 'rodí se plně vyvinutá, samice mají placentu'], a: 1 },
+    { g: 'G', q: 'Dělohu a pochvu samic vačnatců (Metatheria) lze popsat jako:', o: ['jedna pochva a jedna děloha', 'pochva párová, jedna děloha', 'pochva párová, děloha párová', 'jedna pochva, děloha párová'], a: 2 },
+    { g: 'G', q: 'Zvláštními kostmi vačnatců (Metatheria) jsou:', o: ['penisové kosti', 'vakové kosti (ossa marsupialia)', 'krkavčí kosti', 'rostrální kosti'], a: 1 },
+    { g: 'G', q: 'V současné době se vačnatci (Metatheria) vyskytují:', o: ['pouze v Austrálii', 'pouze v Jižní Americe', 'v Austrálii a v Jižní Americe', 'v Austrálii a v Severní i Jižní Americe'], a: 3 },
+    { g: 'G', q: 'Zástupci vačnatců (Metatheria) jsou:', o: ['ptakopysk, ježura, koala', 'koala, klokan, vačice', 'vačice, rejsek, pískomil', 'klokan, koala, bércoun'], a: 1 },
+    { g: 'G', q: 'Absence podkožního tuku je typická pro:', o: ['dikobraza', 'tanu', 'damana', 'hrabáče'], a: 3 },
+    { g: 'G', q: 'Damani (Hyracoidea) jsou příbuzní s:', o: ['vačnatci', 'hrabáči a primáty', 'chobotnatci a sirénami', 'kytovci'], a: 2 },
+    { g: 'G', q: 'Pohyblivý chobot slonů:', o: ['není vyztužen chrupavkou ani kostí', 'je vyztužen chrupavkou', 'je vyztužen kostí', 'je vyztužen chrupavkou i kostí'], a: 0 },
+    { g: 'G', q: 'Pro lenochody je typickým znakem:', o: ['proměnlivý počet sluchových kůstek', 'proměnlivý počet krčních obratlů', 'proměnlivý počet prstů', 'dlouhý ovíjivý ocas'], a: 1 },
+    { g: 'G', q: 'Jiný název pro sirény (Sirenia) zní:', o: ['splešťule a moroši', 'luskouni a korovci', 'harpyje a komoni', 'moroni a ochechule'], a: 3 },
+    { g: 'G', q: 'Kytovci (Cetacea) mají krčních obratlů:', o: ['8', 'proměnlivý počet (6-9)', '7', '3'], a: 2 },
+    { g: 'G', q: 'Pro letuchy (Dermoptera) je typické, že:', o: ['spí v dutinách stromů', 'spí zavěšené za jednu končetinu', 'spí zahryzlé do větve', 'spí zavěšené hřbetem dolů'], a: 3 },
+    { g: 'G', q: 'Čelisti zcela bez zubů jsou typické pro:', o: ['mravenečníky', 'damany', 'hrabáče', 'lenochody'], a: 0 },
+    // Skupina G - Savci (Hmyzožravci, Letouni, Primáti, Šelmy)
+    { g: 'G', q: 'Ostré stoličky jsou typické pro:', o: ['letuchy a sirény', 'primáty a hlodavce', 'lenochody a mravenečníky', 'rejsky a netopýry'], a: 3 },
+    { g: 'G', q: 'Stromový mravenečník čtyřprstý se též nazývá:', o: ['tamandua', 'koura', 'wombac', 'balam'], a: 0 },
+    { g: 'G', q: 'Nejmenším rejskem na území ČR je:', o: ['rejsek malý', 'myška drobná', 'plšík lískový', 'rejsek obecný'], a: 0 },
+    { g: 'G', q: 'Nejmenším savcem na světě je:', o: ['rejsek malý', 'bělozubka nejmenší', 'vačík inka', 'lumík sibiřský'], a: 1 },
+    { g: 'G', q: 'Lopatovité přední končetiny, slabý zrak a nevyvinuté boltce jsou typické pro:', o: ['mravencojeda', 'mravenečníka', 'medojeda', 'krtka'], a: 3 },
+    { g: 'G', q: 'Žlábek ve druhém spodním řezáku pro jed je typickým znakem pro:', o: ['rosomáky', 'mravenečníky', 'štětinatce', 'štětkouny'], a: 2 },
+    { g: 'G', q: 'Mezi letouny (Chiroptera) patří podřády:', o: ['kaloni a netopýři', 'netopýři a vrápenci', 'letuchy a poletuchy', 'letuchy, vakoveverky a létavky'], a: 0 },
+    { g: 'G', q: 'Kteří letouni „pískají“ nosem?', o: ['listonosovití', 'netopýrovití', 'kaloňovití', 'vrápencovití'], a: 3 },
+    { g: 'G', q: 'Při zavěšení se celí zabalí do křídel:', o: ['vrápenci', 'netopýři', 'upíři', 'kaloni'], a: 0 },
+    { g: 'G', q: 'Jediným kaloněm se schopností echolokace je:', o: ['kaloň plavý', 'kaloň egyptský', 'kaloň dlouhonosý', 'kaloň dlouhoocasý'], a: 1 },
+    { g: 'G', q: 'Skvělé noční vidění (více světločivných buněk než sovy) mají:', o: ['kaloni', 'luskouni', 'koaly', 'potkany'], a: 0 },
+    { g: 'G', q: 'Navádění sluchem podle odrazu vlastního pískání se nazývá:', o: ['vokalizace', 'translokace', 'dislokace', 'echolokace'], a: 3 },
+    { g: 'G', q: 'Poloopice (Strepsirrhini) charakterizuje:', o: ['rhinarium, dobrý čich, čistící drápek na ukazováčku zadní nohy', 'absence rhinaria, špatný čich', 'prodloužený čenich, všechny prsty s drápky', 'zkrácená obličejová část, palec s nehtem'], a: 0 },
+    { g: 'G', q: 'Zástupcem ploskonosých primátů (Platyrrhini) je:', o: ['gorila nížinná', 'pavián pláštíkový', 'gueréza červená', 'malpa hnědá'], a: 3 },
+    { g: 'G', q: 'Zástupcem ploskonosých primátů (Platyrrhini) je:', o: ['lvíček zlatý', 'nártoun celebeský', 'kočkodan husarský', 'orangutan sumaterský'], a: 0 },
+    { g: 'G', q: 'Zástupcem úzkonosých primátů (Catarrhini) je:', o: ['lvíček zlatý', 'chápan středoamerický', 'kočkodan zelený', 'malpa hnědá'], a: 2 },
+    { g: 'G', q: 'Největším žijícím lidoopem je:', o: ['šimpanz bonobo', 'gorila nížinná', 'gibon lar', 'orangutan sumaterský'], a: 1 },
+    { g: 'G', q: 'Nejbližším příbuzným člověka je:', o: ['šimpanz bonobo', 'šimpanz učenlivý', 'orangutan bornejský', 'outloň váhavý'], a: 1 },
+    { g: 'G', q: 'Nejvýznamnějším smyslem úzkonosých primátů (Catarrhini) je:', o: ['zrak', 'sluch', 'čich', 'hmat'], a: 0 },
+    { g: 'G', q: 'Chrup šelem (Carnivora) je:', o: ['úplný', 'chybí canini', 'chybí praemolares', 'chybí incisivi'], a: 0 },
+    { g: 'G', q: 'Placenta a děloha šelem (Carnivora) je:', o: ['rozptýlená', 'ostrůvkovitá', 'pásová', 'terčovitá'], a: 2 },
+    { g: 'G', q: 'Podřády šelem (Carnivora) jsou:', o: ['psotvární a kočkotvární', 'psofilní a kočkotvární', 'psotvární a kočkofilní', 'psofilní a kočkofilní'], a: 0 },
+    { g: 'G', q: 'Mezi čeledi psotvárných šelem (Caniformia) NEPATŘÍ:', o: ['mrožovití', 'lasicovití', 'hyenovití', 'medvědovití'], a: 2 },
+    { g: 'G', q: 'Výrazně protažené zuby zvané kly jsou typické pro:', o: ['tuleňovité', 'lachtanovité', 'mrožovité', 'kelnatkovité'], a: 2 },
+    { g: 'G', q: 'Vztyčit přední polovinu těla (díky rotaci zadních končetin) NEDOKÁŽE:', o: ['tuleň', 'lachtan', 'mrož', 'rypouš'], a: 0 },
+    { g: 'G', q: 'Mezi čeledi kočkotvárných šelem (Feliformia) NEPATŘÍ:', o: ['hyenovití', 'madagaskarské šelmy', 'cibetkovití', 'lasicovití'], a: 3 },
+    { g: 'G', q: 'Největším zástupcem „malých koček“ je:', o: ['manul', 'serval', 'puma', 'karakal'], a: 2 },
+    { g: 'G', q: 'Štětičky na uších má:', o: ['manul a margay', 'rys a karakal', 'puma a serval', 'jaguarundi a kočka rybářská'], a: 1 },
+    // Skupina G - Savci (Hyeny, Hlodavci, Kopytníci)
+    { g: 'G', q: 'Mláďata jsou rozena pseudopenisem (klitorisem) samice, který při porodu praská, u:', o: ['mangust', 'rosomáků', 'kojotů', 'hyen'], a: 3 },
+    { g: 'G', q: 'Předek ploutvonožců byl příbuzný:', o: ['medvědům', 'lvům', 'hyenám', 'hrochům'], a: 0 },
+    { g: 'G', q: 'Ploutvonožci patří do řádu:', o: ['chudozubých', 'kytovců', 'šelem', 'sirén'], a: 2 },
+    { g: 'G', q: 'Dýchací cesty ústící na temeni hlavy otvory se svalovými svěrači mají:', o: ['lenochodi a mravenečníky', 'ploutvonožci', 'kytovce', 'sirény'], a: 2 },
+    { g: 'G', q: 'Největším ozubeným živočichem je:', o: ['plejtvák myšok', 'medvěd lední', 'hroch obojživelný', 'vorvaň tupočelý'], a: 3 },
+    { g: 'G', q: 'Charakteristické pro řád hlodavci (Rodentia) je:', o: ['nejpočetnější řád, řezáky změněny na hlodáky, canini chybí', 'lasicovité tělo, řitní pachové žlázy', 'štíhlé tělo, výrazné canini', 'neozubený zobák'], a: 0 },
+    { g: 'G', q: 'Mezi čeledi hlodavců (Rodentia) NEPATŘÍ:', o: ['tarbíkovití a urzonovití', 'plchovití a činčilovití', 'nutriovití a bobrovití', 'štětinatcovití a rejskovití'], a: 3 },
+    { g: 'G', q: 'Z hlodavců (Rodentia) chybí slepé střevo:', o: ['plchovitým', 'veverkovitým', 'bobrovitým', 'morčatovitým'], a: 0 },
+    { g: 'G', q: 'Zástupci čeledi myšovití jsou:', o: ['pískomil mongolský, ondatra pižmová', 'poletuška severní', 'plch velký', 'rypoš lysý'], a: 0 },
+    { g: 'G', q: 'Chrup zajíců (Lagomorpha) má:', o: ['praemolares jako hlodáky', 'přední incisivi změněny na hlodáky', 'molares jako hlodáky', 'canini jako hlodáky'], a: 1 },
+    { g: 'G', q: 'Zvláštnosti zajíců (Lagomorpha) zahrnují:', o: ['šourek za penisem', 'šourek za penisem, koprofágie', 'šourek před penisem, cékotrofie', 'šourek před penisem, koprofágie'], a: 2 },
+    { g: 'G', q: 'Charakteristické pro čeleď tapírovití:', o: ['dlouhý chobot, 4 prsty vpředu, 3 vzadu', 'krátký chobotek, přední končetiny 4 prsty, zadní 3', 'krátký chobotek, přední 3, zadní 4', 'dlouhý chobot z dolního pysku'], a: 1 },
+    { g: 'G', q: 'Charakteristické pro čeleď nosorožcovití:', o: ['končetiny se třemi prsty, 1–2 rohy, špatný zrak, vynikající čich a sluch', 'končetiny se čtyřmi prsty, výborný zrak', 'končetiny se třemi prsty, 2–3 rohy', 'končetiny se čtyřmi prsty, vynikající sluch'], a: 0 },
+    { g: 'G', q: 'Charakteristické pro čeleď koňovití (Equidae) je:', o: ['zachovány dva prsty', 'zachován pouze jeden prst (3. prst), ostatní jen rudimenty', 'zachovány tři prsty', 'zachovány čtyři prsty'], a: 1 },
+    { g: 'G', q: 'Do kterého řádu patří čeleď koňovití (Equidae)?', o: ['sudokopytníci', 'damani', 'lichokopytníci', 'chudozubí'], a: 2 },
+    { g: 'G', q: 'Zástupci čeledi koňovití (Equidae) jsou:', o: ['kančil menší', 'velbloud dvouhrbý', 'slon africký', 'kiang, osel asijský'], a: 3 },
+    { g: 'G', q: 'Zástupce mozolnatců:', o: ['velbloud dvouhrbý', 'pekari páskovaný', 'hrošík liberijský', 'jelen wapiti'], a: 0 },
+    { g: 'G', q: 'Rozdíl mezi rody Capra (koza) a Ovis (ovce):', o: ['ovce – kratší lebka, rohy trojúhelníkovité, má slzní jamku; koza – delší lebka, bez slzní jamky', 'ovce – delší lebka', 'ovce – nemá slzní jamku', 'koza – kratší lebka'], a: 0 },
+    { g: 'G', q: 'Při rozrušení vztyčuje ocas do svislé polohy:', o: ['lama guanako', 'pekari páskovaný', 'prase bradavičnaté', 'svišť horský'], a: 2 },
+    { g: 'G', q: 'K archaickým rysům samců jelenovitých (Cervidae) patří:', o: ['větvené parohy', 'dlouhé špičáky, jejichž funkci později převzaly parohy', 'kloaka', 'ovíjivý ocas'], a: 1 }
+
+
+
+    
+    // ... další otázky ...
+];
+
+let testQuestions = [];
+let currentIdx = 0;
+let score = 0;
+let currentShuffledOptions = [];
+
+function initTest() {
+    // Logika výběru 5 a 6 otázek ze skupin (pro ukázku bere vše co je v rawData)
+    const groups = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+    const targets = { A: 2, B: 2, C: 2, D: 8, E: 8, F: 9, G: 9 };
+    
+    let pool = [];
+    groups.forEach(group => {
+        let filtered = rawData.filter(q => q.g === group);
+        filtered.sort(() => Math.random() - 0.5);
+        pool.push(...filtered.slice(0, targets[group]));
+    });
+    
+    testQuestions = pool.sort(() => Math.random() - 0.5);
+    if(testQuestions.length === 0) testQuestions = rawData.slice(0, 40); // Pojistka pro prázdný pool
+    renderQuestion();
+}
+
+function renderQuestion() {
+    const q = testQuestions[currentIdx];
+    document.getElementById('q-counter').innerText = `Otázka ${currentIdx + 1}/${testQuestions.length}`;
+    document.getElementById('group-name').innerText = `Skupina ${q.g}`;
+    document.getElementById('q-text').innerText = q.q;
+    
+    const optionsBox = document.getElementById('q-options');
+    optionsBox.innerHTML = '';
+    
+    // --- NÁHODNÉ MÍCHÁNÍ ODPOVĚDÍ ---
+    // Vytvoříme pole objektů, kde si držíme informaci, zda byla odpověď původně správná
+    currentShuffledOptions = q.o.map((text, index) => ({
+        text: text,
+        isCorrect: index === q.a
+    }));
+    
+    // Zamícháme toto pole
+    currentShuffledOptions.sort(() => Math.random() - 0.5);
+
+    currentShuffledOptions.forEach((optObj, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'opt';
+        btn.innerText = optObj.text;
+        btn.onclick = () => check(i, btn);
+        optionsBox.appendChild(btn);
+    });
+    
+    document.getElementById('next-btn').style.display = 'none';
+}
+
+function check(selectedIndex, selectedBtn) {
+    const allBtns = document.querySelectorAll('.opt');
+    allBtns.forEach(b => b.disabled = true);
+    
+    let correctBtnIndex = currentShuffledOptions.findIndex(o => o.isCorrect);
+    
+    if(currentShuffledOptions[selectedIndex].isCorrect) {
+        selectedBtn.classList.add('correct');
+        score++;
+    } else {
+        selectedBtn.classList.add('wrong');
+        allBtns[correctBtnIndex].classList.add('correct'); // Ukázat správnou
+    }
+    document.getElementById('next-btn').style.display = 'block';
+}
+
+function handleNext() {
+    currentIdx++;
+    if(currentIdx < testQuestions.length) renderQuestion();
+    else showResult();
+}
+
+function showResult() {
+    document.getElementById('quiz-box').innerHTML = `
+        <div style="text-align:center; padding: 20px;">
+            <h2 style="color:var(--primary)">Test dokončen!</h2>
+            <p style="font-size: 1.8em; margin: 20px 0;">Skóre: <b>${score}</b> / ${testQuestions.length}</p>
+            <button onclick="location.reload()" class="opt" style="text-align:center">Zkusit znovu</button>
+        </div>`;
+}
+
+initTest();
+</script>
+</body>
+</html>
